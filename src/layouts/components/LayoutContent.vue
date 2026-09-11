@@ -59,9 +59,9 @@
         </template>
       </t-tab-panel>
     </t-tabs>
-    <t-content :class="`${prefix}-content-layout`">
+    <t-content id="main-content" :class="`${prefix}-content-layout`" tabindex="-1">
       <l-breadcrumb v-if="settingStore.showBreadcrumb" />
-      <l-content />
+      <l-content :key="contentViewKey" />
     </t-content>
     <t-footer v-if="settingStore.showFooter" :class="`${prefix}-footer-layout`">
       <l-footer />
@@ -87,8 +87,9 @@ const router = useRouter();
 
 const settingStore = useSettingStore();
 const tabsRouterStore = useTabsRouterStore();
-const tabRouters = computed(() => tabsRouterStore.tabRouters.filter((route) => route.isAlive || route.isHome));
+const tabRouters = computed(() => tabsRouterStore.tabRouters.filter((item) => item.isAlive || item.isHome));
 const activeTabPath = ref('');
+const contentViewKey = computed(() => (route.meta?.keepAlive === false ? String(route.fullPath) : 'cached-views'));
 
 const handleChangeCurrentTab = (path: string) => {
   const { tabRouters } = tabsRouterStore;

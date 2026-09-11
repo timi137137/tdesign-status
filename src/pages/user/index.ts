@@ -1,13 +1,19 @@
 import { TChartColor } from '@/config/color';
-import { getDateArray, getRandomArray } from '@/utils/charts';
+import { getDateArray } from '@/utils/charts';
 import { getChartListColor } from '@/utils/color';
 
-/** 折线图数据 */
+export interface UserChartSeries {
+  name: string;
+  data: number[];
+}
+
+/** 折线图数据：默认空序列，由个人页填入真实服务可用率 */
 export function getFolderLineDataSet({
   dateTime = [],
   placeholderColor,
   borderColor,
-}: { dateTime?: Array<string> } & TChartColor) {
+  series = [],
+}: { dateTime?: Array<string>; series?: UserChartSeries[] } & TChartColor) {
   let dateArray: Array<string> = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   if (dateTime.length > 0) {
     const divideNum = 7;
@@ -24,8 +30,8 @@ export function getFolderLineDataSet({
     legend: {
       left: 'center',
       bottom: '0',
-      orient: 'horizontal', // legend 横向布局。
-      data: ['杯子', '茶叶', '蜂蜜', '面粉'],
+      orient: 'horizontal',
+      data: series.map((item) => item.name),
       textStyle: {
         fontSize: 12,
         color: placeholderColor,
@@ -59,91 +65,18 @@ export function getFolderLineDataSet({
     tooltip: {
       trigger: 'item',
     },
-    series: [
-      {
-        showSymbol: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        name: '杯子',
-        stack: '总量',
-        data: [
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-        ],
-        type: 'line',
-        itemStyle: {
-          borderColor,
-          borderWidth: 1,
-        },
+    series: series.map((item) => ({
+      showSymbol: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      name: item.name,
+      stack: '总量',
+      data: item.data,
+      type: 'line',
+      itemStyle: {
+        borderColor,
+        borderWidth: 1,
       },
-      {
-        showSymbol: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        name: '茶叶',
-        stack: '总量',
-        data: [
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-        ],
-        type: 'line',
-        itemStyle: {
-          borderColor,
-          borderWidth: 1,
-        },
-      },
-      {
-        showSymbol: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        name: '蜂蜜',
-        stack: '总量',
-        data: [
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-        ],
-        type: 'line',
-        itemStyle: {
-          borderColor,
-          borderWidth: 1,
-        },
-      },
-      {
-        showSymbol: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        name: '面粉',
-        stack: '总量',
-        data: [
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-          getRandomArray(),
-        ],
-        type: 'line',
-        itemStyle: {
-          borderColor,
-          borderWidth: 1,
-        },
-      },
-    ],
+    })),
   };
 }

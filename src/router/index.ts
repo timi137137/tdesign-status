@@ -1,43 +1,102 @@
-import uniq from 'lodash/uniq';
 import { createRouter, createWebHistory, RouteRecordRaw, useRoute } from 'vue-router';
 
+import { retryImport } from '@/utils/retry-import';
+
+import homepageModules from './modules/homepage';
+import resultModules from './modules/result';
+import statusModules from './modules/status';
+import systemModules from './modules/system';
+import userModules from './modules/user';
+
 const env = import.meta.env.MODE || 'development';
-
-// 导入homepage相关固定路由
-const homepageModules = import.meta.glob('./modules/**/homepage.ts', { eager: true });
-
-// 导入modules非homepage相关固定路由
-const fixedModules = import.meta.glob('./modules/**/!(homepage).ts', { eager: true });
 
 // 其他固定路由
 const defaultRouterList: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('@/pages/login/index.vue'),
+    component: retryImport(() => import('@/pages/login/index.vue')),
   },
   {
     path: '/',
-    redirect: '/dashboard/base',
+    component: retryImport(() => import('@/pages/public-status/layout.vue')),
+    meta: {
+      title: '服务状态',
+      hidden: true,
+      public: true,
+    },
+    children: [
+      {
+        path: '',
+        name: 'PublicStatus',
+        component: retryImport(() => import('@/pages/public-status/index.vue')),
+        meta: {
+          title: '服务状态',
+          hidden: true,
+          public: true,
+        },
+      },
+      {
+        path: 'maintenances',
+        name: 'PublicMaintenances',
+        component: retryImport(() => import('@/pages/public-status/maintenances.vue')),
+        meta: {
+          title: '计划与进行中的维护',
+          hidden: true,
+          public: true,
+        },
+      },
+      {
+        path: 'history',
+        name: 'PublicHistory',
+        component: retryImport(() => import('@/pages/public-status/history.vue')),
+        meta: {
+          title: '事件与维护历史',
+          hidden: true,
+          public: true,
+        },
+      },
+      {
+        path: 'incident/:id',
+        name: 'PublicIncidentDetail',
+        redirect: (to) => ({ path: '/', query: { kind: 'incident', id: String(to.params.id) } }),
+        meta: {
+          title: '事件详情',
+          hidden: true,
+          public: true,
+        },
+      },
+      {
+        path: 'maintenance/:id',
+        name: 'PublicMaintenanceDetail',
+        redirect: (to) => ({ path: '/', query: { kind: 'maintenance', id: String(to.params.id) } }),
+        meta: {
+          title: '维护详情',
+          hidden: true,
+          public: true,
+        },
+      },
+    ],
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    redirect: '/result/404',
+    meta: {
+      title: '页面不存在',
+      hidden: true,
+    },
   },
 ];
-// 存放固定路由
-export const homepageRouterList: Array<RouteRecordRaw> = mapModuleRouterList(homepageModules);
-export const fixedRouterList: Array<RouteRecordRaw> = mapModuleRouterList(fixedModules);
+export const homepageRouterList = [...homepageModules] as RouteRecordRaw[];
+export const fixedRouterList = [
+  ...statusModules,
+  ...resultModules,
+  ...systemModules,
+  ...userModules,
+] as RouteRecordRaw[];
 
 export const allRoutes = [...homepageRouterList, ...fixedRouterList, ...defaultRouterList];
-
-// 固定路由模块转换为路由
-export function mapModuleRouterList(modules: Record<string, unknown>): Array<RouteRecordRaw> {
-  const routerList: Array<RouteRecordRaw> = [];
-  Object.keys(modules).forEach((key) => {
-    // @ts-ignore
-    const mod = modules[key].default || {};
-    const modList = Array.isArray(mod) ? [...mod] : [mod];
-    routerList.push(...modList);
-  });
-  return routerList;
-}
 
 export const getRoutesExpanded = () => {
   const expandedRoutes: Array<string> = [];
@@ -55,12 +114,12 @@ export const getRoutesExpanded = () => {
         });
     }
   });
-  return uniq(expandedRoutes);
+  return [...new Set(expandedRoutes)];
 };
 
 export const getActive = (maxLevel = 3): string => {
   const route = useRoute();
-  if (!route.path) {
+  if (!route?.path) {
     return '';
   }
   return route.path

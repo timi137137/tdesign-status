@@ -1,6 +1,13 @@
 <template>
   <div :class="sideNavCls">
-    <t-menu :class="menuCls" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded">
+    <t-menu
+      :class="menuCls"
+      :theme="theme"
+      :value="active"
+      :collapsed="collapsed"
+      :default-expanded="defaultExpanded"
+      @change="onMenuChange"
+    >
       <template #logo>
         <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
           <component :is="getLogo()" :class="`${prefix}-side-nav-logo-${collapsed ? 't' : 'tdesign'}-logo`" />
@@ -115,7 +122,14 @@ onMounted(() => {
 });
 
 const goHome = () => {
-  router.push('/dashboard/base');
+  router.push('/dashboard/overview');
+};
+
+const onMenuChange = (value: string | number) => {
+  const path = String(value);
+  if (path && path !== router.currentRoute.value.path) {
+    router.push(path);
+  }
 };
 
 const getLogo = () => {

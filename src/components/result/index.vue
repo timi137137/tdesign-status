@@ -1,9 +1,9 @@
 <template>
   <div class="result-container">
     <div class="result-bg-img">
-      <component :is="dynamicComponent"></component>
+      <component :is="dynamicComponent" aria-hidden="true"></component>
     </div>
-    <div class="result-title">{{ title }}</div>
+    <h1 class="result-title">{{ title }}</h1>
     <div class="result-tip">{{ tip }}</div>
     <slot />
   </div>

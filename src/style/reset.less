@@ -1,4 +1,12 @@
 // 对部分样式进行重置
+html,
+body,
+#app {
+  min-height: 100%;
+  height: auto;
+  background: var(--td-bg-color-page);
+}
+
 body {
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-medium);
@@ -35,5 +43,16 @@ p {
 
 * {
   box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 

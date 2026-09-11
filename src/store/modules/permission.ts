@@ -1,49 +1,37 @@
 import { defineStore } from 'pinia';
-import { RouteRecordRaw } from 'vue-router';
 
-import { RouteItem } from '@/api/model/permissionModel';
-import { getMenuList } from '@/api/permission';
-import router, { fixedRouterList, homepageRouterList } from '@/router';
-import { store } from '@/store';
-import { transformObjectToRoute } from '@/utils/route';
+import { fixedRouterList, homepageRouterList } from '@/router';
+import { store } from '@/store/pinia';
+import type { Permission } from '@/types/auth';
+import type { MenuRoute } from '@/types/interface';
+
+import { useUserStore } from './user';
+
+const canAccess = (permissions: Permission[], route: MenuRoute) => {
+  const required = route.meta?.permissions as Permission[] | undefined;
+  return !required?.length || required.some((permission) => permissions.includes(permission));
+};
+
+const filterRoutes = (routes: MenuRoute[], permissions: Permission[]): MenuRoute[] =>
+  routes.reduce<MenuRoute[]>((result, route) => {
+    if (!canAccess(permissions, route)) return result;
+    const hadChildren = Boolean(route.children?.length);
+    const children = hadChildren ? filterRoutes(route.children, permissions) : [];
+    if (hadChildren && !children.length) return result;
+    result.push({ ...route, children });
+    return result;
+  }, []);
 
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
-    whiteListRouters: ['/login'],
-    routers: [],
-    removeRoutes: [],
-    asyncRoutes: [],
+    whiteListRouters: ['/login', '/', '/maintenances', '/history'],
+    routers: [] as MenuRoute[],
   }),
   actions: {
-    async initRoutes() {
-      const accessedRouters = this.asyncRoutes;
-
-      // 在菜单展示全部路由
-      this.routers = [...homepageRouterList, ...accessedRouters, ...fixedRouterList];
-      // 在菜单只展示动态路由和首页
-      // this.routers = [...homepageRouterList, ...accessedRouters];
-      // 在菜单只展示动态路由
-      // this.routers = [...accessedRouters];
-    },
-    async buildAsyncRoutes() {
-      try {
-        // 发起菜单权限请求 获取菜单列表
-        const asyncRoutes: Array<RouteItem> = (await getMenuList()).list;
-        this.asyncRoutes = transformObjectToRoute(asyncRoutes);
-        await this.initRoutes();
-        return this.asyncRoutes;
-      } catch (error) {
-        throw new Error("Can't build routes");
-      }
-    },
-    async restoreRoutes() {
-      // 不需要在此额外调用initRoutes更新侧边导肮内容，在登录后asyncRoutes为空会调用
-      this.asyncRoutes.forEach((item: RouteRecordRaw) => {
-        if (item.name) {
-          router.removeRoute(item.name);
-        }
-      });
-      this.asyncRoutes = [];
+    initRoutes() {
+      const { permissions } = useUserStore();
+      const routes = [...homepageRouterList, ...fixedRouterList] as unknown as MenuRoute[];
+      this.routers = filterRoutes(routes, permissions);
     },
   },
 });

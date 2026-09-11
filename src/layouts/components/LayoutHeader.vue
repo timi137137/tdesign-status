@@ -15,6 +15,7 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
 import { usePermissionStore, useSettingStore } from '@/store';
+import type { MenuRoute } from '@/types/interface';
 
 import LHeader from './Header.vue';
 
@@ -26,7 +27,7 @@ const headerMenu = computed(() => {
     if (settingStore.splitMenu) {
       return menuRouters.value.map((menu) => ({
         ...menu,
-        children: [],
+        children: [] as MenuRoute[],
       }));
     }
     return [];

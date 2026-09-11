@@ -3,7 +3,7 @@
     ref="form"
     :class="['item-container', `login-${type}`]"
     :data="formData"
-    :rules="FORM_RULES"
+    :rules="formRules"
     label-width="0"
     @submit="onSubmit"
   >
@@ -82,7 +82,7 @@
 import QrcodeVue from 'qrcode.vue';
 import type { FormInstanceFunctions, FormRule, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useCounter } from '@/hooks';
@@ -93,7 +93,7 @@ const userStore = useUserStore();
 const INITIAL_DATA = {
   phone: '',
   account: 'admin',
-  password: 'admin',
+  password: '',
   verifyCode: '',
   checked: false,
 };
@@ -106,6 +106,16 @@ const FORM_RULES: Record<string, FormRule[]> = {
 };
 
 const type = ref('password');
+
+const formRules = computed(() => {
+  if (type.value === 'phone') {
+    return { phone: FORM_RULES.phone, verifyCode: FORM_RULES.verifyCode };
+  }
+  if (type.value === 'qrcode') {
+    return {};
+  }
+  return { account: FORM_RULES.account, password: FORM_RULES.password };
+});
 
 const form = ref<FormInstanceFunctions>();
 const formData = ref({ ...INITIAL_DATA });
@@ -132,18 +142,26 @@ const sendCode = () => {
 };
 
 const onSubmit = async (ctx: SubmitContext) => {
-  if (ctx.validateResult === true) {
-    try {
-      await userStore.login(formData.value);
+  if (type.value !== 'password') {
+    MessagePlugin.info('当前仅支持账号密码登录');
+    return;
+  }
+  if (ctx.validateResult !== true) {
+    MessagePlugin.warning('请填写账号和密码');
+    return;
+  }
+  try {
+    await userStore.login({
+      account: formData.value.account,
+      password: formData.value.password,
+    });
 
-      MessagePlugin.success('登陆成功');
-      const redirect = route.query.redirect as string;
-      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
-      router.push(redirectUrl);
-    } catch (e) {
-      console.log(e);
-      MessagePlugin.error(e.message);
-    }
+    MessagePlugin.success('登陆成功');
+    const redirect = route.query.redirect as string;
+    const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/overview';
+    await router.replace(redirectUrl);
+  } catch (error) {
+    MessagePlugin.error(error instanceof Error ? error.message : '登录失败，请稍后重试');
   }
 };
 </script>

@@ -48,14 +48,20 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { useNotificationStore } from '@/store';
+import { useNotificationStore, useUserStore } from '@/store';
 import type { NotificationItem } from '@/types/interface';
 
 const router = useRouter();
 const store = useNotificationStore();
+const userStore = useUserStore();
 const { msgData, unreadMsg } = storeToRefs(store);
+
+onMounted(() => {
+  void store.loadLatest();
+});
 
 const setRead = (type: string, item?: NotificationItem) => {
   const changeMsg = msgData.value;
@@ -74,7 +80,7 @@ const setRead = (type: string, item?: NotificationItem) => {
 };
 
 const goDetail = () => {
-  router.push('/detail/secondary');
+  router.push(userStore.permissions.includes('audit:read') ? '/system/audit' : '/dashboard/overview');
 };
 </script>
 

@@ -2,13 +2,7 @@
   <div>
     <template v-for="item in list" :key="item.path">
       <template v-if="!item.children || !item.children.length || item.meta?.single">
-        <t-menu-item v-if="getHref(item)" :name="item.path" :value="getPath(item)" @click="openHref(getHref(item)[0])">
-          <template #icon>
-            <component :is="menuIcon(item)" class="t-icon"></component>
-          </template>
-          {{ item.title }}
-        </t-menu-item>
-        <t-menu-item v-else :name="item.path" :value="getPath(item)" :to="item.path">
+        <t-menu-item :name="item.path" :value="getPath(item)" :to="item.redirect || item.path">
           <template #icon>
             <component :is="menuIcon(item)" class="t-icon"></component>
           </template>
@@ -28,6 +22,7 @@
 import type { PropType } from 'vue';
 import { computed } from 'vue';
 
+import LocalIcon from '@/components/tdesign-icon/LocalIcon.vue';
 import { getActive } from '@/router';
 import type { MenuRoute } from '@/types/interface';
 
@@ -36,7 +31,7 @@ type ListItemType = MenuRoute & { icon?: string };
 const props = defineProps({
   navData: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
 });
 const active = computed(() => getActive());
@@ -47,7 +42,7 @@ const list = computed(() => {
 });
 
 const menuIcon = (item: ListItemType) => {
-  if (typeof item.icon === 'string') return <t-icon name={item.icon} />;
+  if (typeof item.icon === 'string') return <LocalIcon name={item.icon} />;
   const RenderIcon = item.icon;
   return RenderIcon;
 };
@@ -57,10 +52,8 @@ const getMenuList = (list: MenuRoute[], basePath?: string): ListItemType[] => {
     return [];
   }
   // 如果meta中有orderNo则按照从小到大排序
-  list.sort((a, b) => {
-    return (a.meta?.orderNo || 0) - (b.meta?.orderNo || 0);
-  });
-  return list
+  return [...list]
+    .sort((a, b) => (a.meta?.orderNo || 0) - (b.meta?.orderNo || 0))
     .map((item) => {
       const path = basePath && !item.path.includes(basePath) ? `${basePath}/${item.path}` : item.path;
 
@@ -76,14 +69,6 @@ const getMenuList = (list: MenuRoute[], basePath?: string): ListItemType[] => {
     .filter((item) => item.meta && item.meta.hidden !== true);
 };
 
-const getHref = (item: MenuRoute) => {
-  const { frameSrc, frameBlank } = item.meta;
-  if (frameSrc && frameBlank) {
-    return frameSrc.match(/(http|https):\/\/([\w.]+\/?)\S*/);
-  }
-  return null;
-};
-
 const getPath = (item: ListItemType) => {
   const activeLevel = active.value.split('/').length;
   const pathLevel = item.path.split('/').length;
@@ -96,9 +81,5 @@ const getPath = (item: ListItemType) => {
   }
 
   return item.meta?.single ? item.redirect : item.path;
-};
-
-const openHref = (url: string) => {
-  window.open(url);
 };
 </script>

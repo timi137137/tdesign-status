@@ -1,11 +1,8 @@
-import keys from 'lodash/keys';
 import { defineStore } from 'pinia';
-import { Color } from 'tvision-color';
 
 import { DARK_CHART_COLORS, LIGHT_CHART_COLORS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
-import { store } from '@/store';
-import { generateColorMap, insertThemeStylesheet } from '@/utils/color';
+import { store } from '@/store/pinia';
 
 const state = {
   ...STYLE_CONFIG,
@@ -52,7 +49,11 @@ export const useSettingStore = defineStore('setting', {
 
       this.chartColors = isDarkMode ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
     },
-    changeBrandTheme(brandTheme: string) {
+    async changeBrandTheme(brandTheme: string) {
+      const [{ Color }, { generateColorMap, insertThemeStylesheet }] = await Promise.all([
+        import('tvision-color'),
+        import('@/utils/color'),
+      ]);
       const mode = this.displayMode;
       // 以主题色加显示模式作为键
       const colorKey = `${brandTheme}[${mode}]`;
@@ -86,7 +87,7 @@ export const useSettingStore = defineStore('setting', {
     },
   },
   persist: {
-    paths: [...keys(STYLE_CONFIG), 'colorList', 'chartColors'],
+    pick: [...Object.keys(STYLE_CONFIG), 'colorList', 'chartColors'] as Array<keyof TState>,
   },
 });
 
