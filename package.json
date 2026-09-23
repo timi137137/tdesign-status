@@ -61,7 +61,7 @@
     "@commitlint/cli": "^17.6.6",
     "@commitlint/config-conventional": "^17.6.6",
     "@eslint/eslintrc": "^3.3.7",
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.62.1",
     "@types/better-sqlite3": "^9.6.0",
@@ -69,13 +69,10 @@
     "@types/lodash": "^4.14.195",
     "@types/nprogress": "^0.2.0",
     "@types/qs": "^6.9.7",
-    "@typescript-eslint/eslint-plugin": "^8.70.1",
-    "@typescript-eslint/parser": "^8.70.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/compiler-sfc": "^3.5.41",
-    "@vue/eslint-config-typescript": "^14.9.0",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
     "drizzle-kit": "^0.31.10",
@@ -113,7 +110,7 @@
     "workbox-strategies": "^7.4.1"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=20.19.0 <25"
   },
   "config": {
     "commitizen": {
