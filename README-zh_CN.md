@@ -9,13 +9,17 @@
 </p>
 
 <p align="center">
-  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/vite.svg" alt="node compatility"></a>
+  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/vite.svg" alt="node compatibility"></a>
   <a href="https://github.com/Tencent/tdesign-vue-next/blob/develop/LICENSE">
     <img src="https://img.shields.io/npm/l/tdesign-vue-next.svg?sanitize=true" alt="License">
   </a>
 </p>
 
 简体中文 | [English](./README.md) 
+
+### 免费托管部署
+
+本仓库为 **Fastify + SQLite** 常驻服务，可直接部署到 **Render / Koyeb** 免费实例（Railway 当前基本无免费额度；Vercel 不能原样跑本后端）。详见 [DEPLOY.md](./DEPLOY.md)。
 
 ### 项目简介
 

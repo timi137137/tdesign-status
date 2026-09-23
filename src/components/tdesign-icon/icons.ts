@@ -26,7 +26,6 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
-/** 本项目用到的按需 SVG 图标。不要走 Icon name 的 CDN sprite。 */
 export const LOCAL_ICONS: Record<string, Component> = {
   'arrow-left': ArrowLeftIcon,
   'arrow-right': ArrowRightIcon,

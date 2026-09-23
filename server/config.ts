@@ -28,7 +28,7 @@ function positiveInteger(value: string | undefined, fallback: number): number {
 }
 
 function booleanValue(value: string | undefined, fallback: boolean): boolean {
-  if (value === undefined) return fallback;
+  if (value === undefined || value === '') return fallback;
   return value === '1' || value.toLowerCase() === 'true';
 }
 
@@ -53,6 +53,35 @@ export interface ServerConfig {
   readonly allowedOrigins: ReadonlySet<string>;
   readonly trustProxy: boolean;
   readonly bodyLimit: number;
+  readonly autoSeed: boolean;
+}
+
+function detectsManagedPlatform(): boolean {
+  return Boolean(
+    process.env.RENDER ||
+      process.env.KOYEB_APP_ID ||
+      process.env.KOYEB_SERVICE_ID ||
+      process.env.RAILWAY_ENVIRONMENT ||
+      process.env.FLY_APP_NAME,
+  );
+}
+
+function resolveListenHost(onManagedPlatform: boolean): string {
+  const configured = process.env.STATUS_HOST?.trim();
+  if (onManagedPlatform) {
+    if (!configured || configured === '127.0.0.1' || configured === 'localhost') {
+      return '0.0.0.0';
+    }
+    return configured;
+  }
+  return configured || '0.0.0.0';
+}
+
+function resolveListenPort(onManagedPlatform: boolean): number {
+  if (onManagedPlatform && process.env.PORT) {
+    return positiveInteger(process.env.PORT, 10000);
+  }
+  return positiveInteger(process.env.STATUS_PORT || process.env.PORT, 3000);
 }
 
 export function loadConfig(): ServerConfig {
@@ -75,10 +104,12 @@ export function loadConfig(): ServerConfig {
     allowedOrigins.add('http://localhost:3003');
   }
 
+  const onManagedPlatform = detectsManagedPlatform();
+
   return {
     env,
-    host: process.env.STATUS_HOST || '0.0.0.0',
-    port: positiveInteger(process.env.STATUS_PORT, 3000),
+    host: resolveListenHost(onManagedPlatform),
+    port: resolveListenPort(onManagedPlatform),
     databasePath: path.resolve(root, process.env.STATUS_DB_PATH || './server/data/status.db'),
     migrationsPath: path.resolve(root, './server/db/migrations'),
     distPath: path.resolve(root, process.env.STATUS_DIST_PATH || './dist'),
@@ -89,7 +120,8 @@ export function loadConfig(): ServerConfig {
     loginRateLimitWindow: process.env.STATUS_LOGIN_RATE_WINDOW || '1 minute',
     publicCacheSeconds: positiveInteger(process.env.STATUS_PUBLIC_CACHE_SECONDS, 30),
     allowedOrigins,
-    trustProxy: booleanValue(process.env.STATUS_TRUST_PROXY, false),
+    trustProxy: booleanValue(process.env.STATUS_TRUST_PROXY, onManagedPlatform),
     bodyLimit: positiveInteger(process.env.STATUS_BODY_LIMIT, 1024 * 1024),
+    autoSeed: booleanValue(process.env.STATUS_AUTO_SEED, onManagedPlatform),
   };
 }
