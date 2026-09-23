@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia';
 
-import { store } from '@/store';
+import { store } from '@/store/pinia';
 import type { TRouterInfo, TTabRouterType } from '@/types/interface';
 
 const homeRoute: Array<TRouterInfo> = [
   {
-    path: '/dashboard/base',
+    path: '/dashboard/overview',
     routeIdx: 0,
     title: '仪表盘',
-    name: 'DashboardBase',
+    name: 'DashboardOverview',
     isHome: true,
   },
 ];
@@ -20,7 +20,17 @@ const state = {
 
 // 不需要做多标签tabs页缓存的列表 值为每个页面对应的name 如 DashboardDetail
 // const ignoreCacheRoutes = ['DashboardDetail'];
-const ignoreCacheRoutes = ['login'];
+const ignoreCacheRoutes = [
+  'login',
+  'StatusSite',
+  'StatusServices',
+  'StatusIncidents',
+  'StatusIncidentDetail',
+  'StatusMaintenances',
+  'StatusMaintenanceDetail',
+  'SystemUsers',
+  'SystemAudit',
+];
 
 export const useTabsRouterStore = defineStore('tabsRouter', {
   state: () => state,
@@ -38,9 +48,13 @@ export const useTabsRouterStore = defineStore('tabsRouter', {
     appendTabRouterList(newRoute: TRouterInfo) {
       // 不要将判断条件newRoute.meta.keepAlive !== false修改为newRoute.meta.keepAlive，starter默认开启保活，所以meta.keepAlive未定义时也需要进行保活，只有显式说明false才禁用保活。
       const needAlive = !ignoreCacheRoutes.includes(newRoute.name as string) && newRoute.meta?.keepAlive !== false;
-      if (!this.tabRouters.find((route: TRouterInfo) => route.path === newRoute.path)) {
+      const existed = this.tabRouters.find((route: TRouterInfo) => route.path === newRoute.path);
+      if (!existed) {
         // eslint-disable-next-line no-param-reassign
         this.tabRouterList = this.tabRouterList.concat({ ...newRoute, isAlive: needAlive });
+      } else if (!needAlive) {
+        existed.isAlive = false;
+        existed.meta = newRoute.meta;
       }
     },
     // 处理关闭当前

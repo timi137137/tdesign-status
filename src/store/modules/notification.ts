@@ -1,60 +1,58 @@
 import { defineStore } from 'pinia';
 
+import { adminApi, type DashboardAuditItem } from '@/api/admin';
+import { store } from '@/store/pinia';
 import type { NotificationItem } from '@/types/interface';
+import { formatStatusTime } from '@/utils/status-date';
 
-const msgData = [
-  {
-    id: '123',
-    content: '腾讯大厦一楼改造施工项目 已通过审核！',
-    type: '合同动态',
-    status: true,
-    collected: false,
-    date: '2021-01-01 08:00',
-    quality: 'high',
-  },
-  {
-    id: '124',
-    content: '三季度生产原材料采购项目 开票成功！',
-    type: '票务动态',
-    status: true,
-    collected: false,
-    date: '2021-01-01 08:00',
-    quality: 'low',
-  },
-  {
-    id: '125',
-    content: '2021-01-01 10:00的【国家电网线下签约】会议即将开始，请提前10分钟前往 会议室1 进行签到！',
-    type: '会议通知',
-    status: true,
-    collected: false,
-    date: '2021-01-01 08:00',
-    quality: 'middle',
-  },
-  {
-    id: '126',
-    content: '一季度生产原材料采购项目 开票成功！',
-    type: '票务动态',
-    status: true,
-    collected: false,
-    date: '2021-01-01 08:00',
-    quality: 'low',
-  },
-];
+const ENTITY_LABEL: Record<string, string> = {
+  user: '用户',
+  session: '会话',
+  site_config: '站点配置',
+  service: '服务',
+  incident: '事件',
+  maintenance: '维护',
+  dashboard_layout: '仪表盘布局',
+};
 
-type MsgDataType = typeof msgData;
+const toNotification = (item: DashboardAuditItem, readIds: string[]): NotificationItem => ({
+  id: item.id,
+  content: item.action,
+  type: ENTITY_LABEL[item.entityType] || item.entityType,
+  status: !readIds.includes(item.id),
+  collected: false,
+  date: formatStatusTime(item.createdAt),
+  quality: 'middle',
+});
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
-    msgData,
+    msgData: [] as NotificationItem[],
+    readIds: [] as string[],
   }),
   getters: {
-    unreadMsg: (state) => state.msgData.filter((item: NotificationItem) => item.status),
-    readMsg: (state) => state.msgData.filter((item: NotificationItem) => !item.status),
+    unreadMsg: (state) => state.msgData.filter((item) => item.status),
+    readMsg: (state) => state.msgData.filter((item) => !item.status),
   },
   actions: {
-    setMsgData(data: MsgDataType) {
+    setMsgData(data: NotificationItem[]) {
       this.msgData = data;
+      this.readIds = data.filter((item) => !item.status).map((item) => item.id);
+    },
+    async loadLatest() {
+      try {
+        const overview = await adminApi.dashboard();
+        this.msgData = overview.recentAudit.slice(0, 8).map((item) => toNotification(item, this.readIds));
+      } catch {
+        this.msgData = [];
+      }
     },
   },
-  persist: true,
+  persist: {
+    pick: ['readIds'],
+  },
 });
+
+export function getNotificationStore() {
+  return useNotificationStore(store);
+}

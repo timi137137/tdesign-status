@@ -4,8 +4,8 @@
     <div class="result-success-title">项目已创建成功</div>
     <div class="result-success-describe">可以联系负责人分发应用</div>
     <div>
-      <t-button theme="default" @click="() => $router.push('/detail/advanced')"> 查看进度 </t-button>
-      <t-button @click="() => $router.push('/form/base')"> 返回首页 </t-button>
+      <t-button theme="default" @click="() => $router.push('/')">查看公开状态</t-button>
+      <t-button @click="() => $router.push('/dashboard/overview')">返回仪表盘</t-button>
     </div>
   </div>
 </template>

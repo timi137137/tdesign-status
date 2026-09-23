@@ -23,3 +23,14 @@ package-lock.json
 pnpm-lock.yaml
 .env.local
 .env.*.local
+.env
+.env.*
+!.env.example
+
+# runtime data and local reports
+data/
+server/data/
+playwright-report/
+test-results/
+.lighthouseci/
+lighthouse-reports/

@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div :data-route="contentViewKey" :class="settingStore.displayMode">
     <template v-if="setting.layout.value === 'side'">
-      <t-layout key="side" :class="mainLayoutCls">
+      <t-layout :key="contentViewKey" :class="mainLayoutCls">
         <t-aside><layout-side-nav /></t-aside>
         <t-layout>
           <t-header><layout-header /></t-header>
@@ -11,7 +11,7 @@
     </template>
 
     <template v-else>
-      <t-layout key="no-side">
+      <t-layout :key="'no-side-' + contentViewKey">
         <t-header><layout-header /> </t-header>
         <t-layout :class="mainLayoutCls">
           <layout-side-nav />
@@ -25,6 +25,8 @@
 
 <script setup lang="ts">
 import '@/style/layout.less';
+import 'tdesign-vue-next/es/message/style/css.mjs';
+import 'tdesign-vue-next/es/dialog/style/css.mjs';
 
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, watch } from 'vue';
@@ -48,6 +50,8 @@ const mainLayoutCls = computed(() => [
     't-layout--with-sider': settingStore.showSidebar,
   },
 ]);
+
+const contentViewKey = computed(() => (route.meta?.keepAlive === false ? route.fullPath : 'cached-views'));
 
 const appendNewRoute = () => {
   const {

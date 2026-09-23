@@ -2,7 +2,7 @@
   <div :class="layoutCls">
     <t-head-menu :class="menuCls" :theme="menuTheme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" class="header-logo-container" @click="handleNav('/dashboard/base')">
+        <span v-if="showLogo" class="header-logo-container" @click="handleNav('/dashboard/overview')">
           <logo-full class="t-logo" />
         </span>
         <div v-else class="header-operate-left">
@@ -93,7 +93,7 @@ const props = defineProps({
   },
   menu: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
   isFixed: {
     type: Boolean,
@@ -145,11 +145,9 @@ const handleNav = (url: string) => {
   router.push(url);
 };
 
-const handleLogout = () => {
-  router.push({
-    path: '/login',
-    query: { redirect: encodeURIComponent(router.currentRoute.value.fullPath) },
-  });
+const handleLogout = async () => {
+  await user.logout();
+  router.replace('/login');
 };
 
 const navToGitHub = () => {

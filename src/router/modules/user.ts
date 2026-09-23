@@ -1,36 +1,18 @@
-import { LogoutIcon } from 'tdesign-icons-vue-next';
-import { shallowRef } from 'vue';
-
-import Layout from '@/layouts/index.vue';
+import { retryImport } from '@/utils/retry-import';
 
 export default [
   {
     path: '/user',
     name: 'user',
-    component: Layout,
+    component: retryImport(() => import('@/layouts/index.vue')),
     redirect: '/user/index',
-    meta: { title: '个人页', icon: 'user-circle' },
+    meta: { title: '个人页', hidden: true, permissions: ['dashboard:read'] },
     children: [
       {
         path: 'index',
         name: 'UserIndex',
-        component: () => import('@/pages/user/index.vue'),
-        meta: { title: '个人中心' },
-      },
-    ],
-  },
-  {
-    path: '/loginRedirect',
-    name: 'loginRedirect',
-    redirect: '/login',
-    meta: { title: '登录页', icon: shallowRef(LogoutIcon) },
-    component: () => import('@/layouts/blank.vue'),
-    children: [
-      {
-        path: 'index',
-        redirect: '/login',
-        component: () => import('@/layouts/blank.vue'),
-        meta: { title: '登录中心' },
+        component: retryImport(() => import('@/pages/user/index.vue')),
+        meta: { title: '个人中心', hidden: true, permissions: ['dashboard:read'] },
       },
     ],
   },
