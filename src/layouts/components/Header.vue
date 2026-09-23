@@ -93,7 +93,7 @@ const props = defineProps({
   },
   menu: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
   isFixed: {
     type: Boolean,

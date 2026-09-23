@@ -43,7 +43,7 @@ const MIN_POINT = 992 - 1;
 const props = defineProps({
   menu: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
   showLogo: {
     type: Boolean as PropType<boolean>,

@@ -9,6 +9,7 @@ import { loadConfig, type ServerConfig } from './config';
 import { openDatabase } from './db/client';
 import { applyMigrations } from './db/migrate';
 import { publicSnapshots, users } from './db/schema';
+import { seedFreshDatabase } from './db/seed';
 import { registerSecurity } from './plugins/security';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
@@ -23,6 +24,13 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
   const database = openDatabase(config);
   try {
     applyMigrations(database, config.migrationsPath);
+    if (config.autoSeed) {
+      if (!process.env.STATUS_ADMIN_USERNAME || !process.env.STATUS_ADMIN_PASSWORD) {
+        process.stderr.write('STATUS_AUTO_SEED 已开启但缺少 STATUS_ADMIN_USERNAME/PASSWORD，跳过自动 seed\n');
+      } else {
+        await seedFreshDatabase(database, { requireAdminEnv: true });
+      }
+    }
   } catch (error) {
     database.close();
     throw error;
@@ -72,12 +80,12 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
         ? (error as { statusCode: number }).statusCode
         : 500;
     if (statusCode >= 500) request.log.error({ err: error }, 'request failed');
-    const message =
-      statusCode >= 500 && config.env === 'production'
-        ? '服务器内部错误'
-        : error instanceof Error
-        ? error.message
-        : '请求处理失败';
+    let message = '请求处理失败';
+    if (statusCode >= 500 && config.env === 'production') {
+      message = '服务器内部错误';
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
     return reply
       .code(statusCode)
       .send(apiErrorPayload(statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR', message));
