@@ -131,7 +131,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', syncMenuByScroll);
   statusStore.stopSync();
   const settingStore = useSettingStore();
-  void settingStore.changeMode(settingStore.mode);
+  void settingStore.changeMode(settingStore.mode as 'light' | 'dark' | 'auto');
 });
 </script>
 

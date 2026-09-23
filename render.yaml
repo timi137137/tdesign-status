@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: tdesign-status
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STATUS_HOST
+        value: '0.0.0.0'
+      - key: STATUS_TRUST_PROXY
+        value: 'true'
+      - key: STATUS_AUTO_SEED
+        value: 'true'
+      - key: STATUS_COOKIE_SECURE
+        value: 'true'
+      - key: STATUS_ADMIN_MUST_CHANGE
+        value: 'false'
+      - key: STATUS_ADMIN_USERNAME
+        sync: false
+      - key: STATUS_ADMIN_PASSWORD
+        sync: false
+      - key: STATUS_ADMIN_DISPLAY_NAME
+        value: Admin

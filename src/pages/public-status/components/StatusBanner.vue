@@ -24,7 +24,7 @@ const props = defineProps<{
   summary: OverallStatusSummary;
 }>();
 
-/** 本机打包图标，不用 t-icon name（会拉 CDN sprite，生产 CSP 拦掉后右侧空白） */
+/** 本机打包图标 */
 const iconComponent = computed(() => (props.summary.status === 'up' ? CheckCircleIcon : ErrorCircleIcon));
 </script>
 
@@ -83,7 +83,7 @@ const iconComponent = computed(() => (props.summary.status === 'up' ? CheckCircl
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .status-banner {
     padding: 20px 16px;
     gap: 16px;
