@@ -41,8 +41,9 @@ docker run --rm -p 3000:3000 \
 | 变量 | 托管建议 |
 |------|----------|
 | `NODE_ENV` | `production` |
-| `PORT` / `STATUS_PORT` | 平台注入即可 |
-| `STATUS_HOST` | `0.0.0.0` |
+| `PORT` | 托管平台注入（Render 默认 10000）；托管上优先于 `STATUS_PORT` |
+| `STATUS_PORT` | 本地开发用；勿在 Render 上设成 3000 盖住平台 `PORT` |
+| `STATUS_HOST` | 托管上为 `0.0.0.0`（勿用 `127.0.0.1`） |
 | `STATUS_TRUST_PROXY` | 托管上为 `true` |
 | `STATUS_AUTO_SEED` | 免费无盘时 `true` |
 | `STATUS_COOKIE_SECURE` | HTTPS 下开启 |

@@ -66,6 +66,24 @@ function detectsManagedPlatform(): boolean {
   );
 }
 
+function resolveListenHost(onManagedPlatform: boolean): string {
+  const configured = process.env.STATUS_HOST?.trim();
+  if (onManagedPlatform) {
+    if (!configured || configured === '127.0.0.1' || configured === 'localhost') {
+      return '0.0.0.0';
+    }
+    return configured;
+  }
+  return configured || '0.0.0.0';
+}
+
+function resolveListenPort(onManagedPlatform: boolean): number {
+  if (onManagedPlatform && process.env.PORT) {
+    return positiveInteger(process.env.PORT, 10000);
+  }
+  return positiveInteger(process.env.STATUS_PORT || process.env.PORT, 3000);
+}
+
 export function loadConfig(): ServerConfig {
   loadDotEnv();
   const rawEnv = process.env.NODE_ENV;
@@ -90,8 +108,8 @@ export function loadConfig(): ServerConfig {
 
   return {
     env,
-    host: process.env.STATUS_HOST || '0.0.0.0',
-    port: positiveInteger(process.env.STATUS_PORT || process.env.PORT, 3000),
+    host: resolveListenHost(onManagedPlatform),
+    port: resolveListenPort(onManagedPlatform),
     databasePath: path.resolve(root, process.env.STATUS_DB_PATH || './server/data/status.db'),
     migrationsPath: path.resolve(root, './server/db/migrations'),
     distPath: path.resolve(root, process.env.STATUS_DIST_PATH || './dist'),
