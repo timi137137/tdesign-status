@@ -1,121 +1,91 @@
-
-<p style="display:flex; justify-content: center">
-
-</p>
 <p align="center">
-  <a href="https://tdesign.tencent.com/starter/vue-next/#/dashboard/base" target="_blank">
+  <a href="https://tdesign.tencent.com/" target="_blank">
     <img alt="TDesign Logo" width="200" src="https://tdesign.gtimg.com/starter/brand-logo.svg">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/vite.svg" alt="node compatibility"></a>
-  <a href="https://github.com/Tencent/tdesign-vue-next/blob/develop/LICENSE">
-    <img src="https://img.shields.io/npm/l/tdesign-vue-next.svg?sanitize=true" alt="License">
+  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/badge/node-%3E%3D20.19%20%3C25-brightgreen" alt="node compatibility"></a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
 </p>
 
-简体中文 | [English](./README.md) 
+简体中文 | [English](./README.md)
 
-### 免费托管部署
+> 本仓库为 **TDesign 社区项目**，**并非**腾讯 TDesign 官方团队开发、维护或背书的产品！
 
-本仓库为 **Fastify + SQLite** 常驻服务，可直接部署到 **Render / Koyeb** 免费实例（Railway 当前基本无免费额度；Vercel 不能原样跑本后端）。详见 [DEPLOY.md](./DEPLOY.md)。
+### 简介
 
-### 项目简介
+**TDesign Status** 是基于 TDesign 组件库开发的自托管的状态页，涵盖了公开状态页、故障与维护历史，以及管理中台。
 
-TDesign Vue Next Starter 是一个基于 TDesign，使用 `Vue3`、`Vite`、`Pinia`、`TypeScript` 开发，可进行个性化主题配置，旨在提供项目开箱即用的、配置式的中后台项目。
+技术栈：前端 `Vue 3` + `Vite` + `Pinia` + `TDesign`，后端 `Fastify` + `SQLite`（`better-sqlite3` / Drizzle）。
 
-<p>
-  <a href="http://tdesign.tencent.com/starter/vue-next/">在线预览</a>
-  ·
-  <a href="https://tdesign.tencent.com/starter/">使用文档</a>
-
-</p>
-
-<img src="docs/starter.png">
+![tdesign-status 公开状态页示例](./docs/status.png)
 
 ### 特性
 
-- 内置多种常用的中后台页面
-- 完善的目录结构
-- 完善的代码规范配置
-- 支持暗黑模式
-- 自定义主题颜色
-- 多种空间布局
-- 内置 Mock 数据方案
+- 公开状态页：包含进行中的维护、组件状态、维护历史
+- 自适应移动端布局
+- 继承 TDesign 的主题模式
+- 轻量化单进程：API + 静态 SPA
+- 免费 PaaS 部署（Render / Koyeb）；见 [DEPLOY.md](./DEPLOY.md)
 
-### 使用
+### 环境要求
 
-> 通过 `tdesign-starter-cli` 初始化项目仓库
+- Node.js `>=20.19.0 <25`（ESLint 10 等工具链更偏好 20.19+、22.13+ 或 24+）
+- 构建需能编译 `better-sqlite3`（本机需 Python + C++ 工具链）
+
+### 快速开始
 
 ```bash
-## 1、安装 tdesign-starter-cli
-npm i tdesign-starter-cli@latest -g
+cp .env.example .env
+# 填写 STATUS_ADMIN_USERNAME / STATUS_ADMIN_PASSWORD
 
-## 2、创建项目
-td-starter init
-```
-
-### 开发
-
-``` bash
-## 安装依赖
 npm install
-
-## 启动项目
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-### 构建
+- 应用 / API（开发）：`http://127.0.0.1:3000`（以 `.env` 为准）
+- Vite 前端（开发）：通常 `http://127.0.0.1:3002`
+- 就绪接口：`GET /api/health/live`
+
+### 部署
+
+推荐使用 **Render**（Blueprint + `render.yaml`）或 **Koyeb**（`Dockerfile`）作为云托管。
+
+但也允许直接 Docker 部署：
 
 ```bash
-## 构建正式环境
-npm run build
-
-## 构建测试环境
-npm run build:test
+docker build -t tdesign-status .
+docker run --rm -p 3000:3000 \
+  -e STATUS_ADMIN_USERNAME=admin \
+  -e STATUS_ADMIN_PASSWORD='change-me-1234567' \
+  -e STATUS_ADMIN_MUST_CHANGE=false \
+  -e STATUS_AUTO_SEED=true \
+  -e STATUS_TRUST_PROXY=true \
+  tdesign-status
 ```
 
-### 其他
+### 环境变量
 
-```bash
-## 预览构建产物
-npm run preview
+| 变量 | 描述 |
+|------|------|
+| `STATUS_ADMIN_*` | 管理员 |
+| `STATUS_DB_PATH` | SQLite 路径 |
+| `PORT` / `STATUS_PORT` | 监听端口 |
+| `STATUS_HOST` | 监听地址 |
+| `STATUS_AUTO_SEED` | 自动填充模拟数据 |
+| `STATUS_TRUST_PROXY` | 反代 HTTPS 时设为 `true` |
 
-## 代码格式检查
-npm run lint
+### 浏览器兼容
 
-## 代码格式检查与自动修复
-npm run lint:fix
-
-## style格式检查
-npm run stylelint
-
-## style格式检查与自动修复
-npm run stylelint:fix
-```
-
-### 如何贡献
-
-非常欢迎您的贡献！提交您的 [Issue](https://github.com/tencent/tdesign-vue-next-starter/issues/new/choose) 或者提交 [Pull Request](https://github.com/Tencent/tdesign-vue-next-starter/pulls)。
-
-#### 贡献提交规范
-
-- [Angular Convention](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-angular)
-- [Vue Style Guide](https://v3.vuejs.org/style-guide/#rule-categories)
-
-### 兼容性
-
-| [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png" alt="IE / Edge" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br> IE / Edge | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Safari |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Edge >=84                                                                                                                                                                                                        | Firefox >=83                                                                                                                                                                                                      | Chrome >=84                                                                                                                                                                                                   | Safari >=14.1                                                                                                                                                                                                  |
-
-### 社区版本
-
-基于 TDesign Vue Next 的 starter-kit 有多种社区版本，访问 [社区链接](https://tdesign.tencent.com/starter/docs/vue-next/community-link) 可以访问更多版本。 
-如果您也开发了 TDesign Starter 的社区版本，可以提交 Issue 或者直接给我们提Pull Request 😊。
+| Edge | Firefox | Chrome | Safari |
+|------|---------|--------|--------|
+| >=84 | >=83 | >=84 | >=14.1 |
 
 ### 开源协议
 
-TDesign 遵循 [MIT 协议](https://github.com/Tencent/tdesign-vue-next-starter/LICENSE)。
-
+MIT，见 [LICENSE](./LICENSE)。上游 TDesign 相关内容仍遵循其各自协议。
