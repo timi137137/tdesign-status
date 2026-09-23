@@ -17,6 +17,10 @@
 
 简体中文 | [English](./README.md) 
 
+### 免费托管部署
+
+本仓库为 **Fastify + SQLite** 常驻服务，可直接部署到 **Render / Koyeb** 免费实例（Railway 当前基本无免费额度；Vercel 不能原样跑本后端）。详见 [DEPLOY.md](./DEPLOY.md)。
+
 ### 项目简介
 
 TDesign Vue Next Starter 是一个基于 TDesign，使用 `Vue3`、`Vite`、`Pinia`、`TypeScript` 开发，可进行个性化主题配置，旨在提供项目开箱即用的、配置式的中后台项目。
