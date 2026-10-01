@@ -52,7 +52,7 @@
     "tvision-color": "^1.6.0",
     "vue": "^3.5.41",
     "vue-clipboard3": "^2.0.0",
-    "vue-router": "^4.6.4"
+    "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
