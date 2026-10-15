@@ -25,6 +25,15 @@ export type PublishState = (typeof PUBLISH_STATES)[number];
 
 export type EntityType = 'incident' | 'maintenance';
 
+/**
+ * 公开页心跳条的分格口径：通栏是近 24 小时、每格 15 分钟；双列半宽是每天一格。
+ * 生产者按它切格，消费者按它标时间轴。
+ */
+export const HEARTBEAT_BUCKET_MS = 15 * 60 * 1000;
+export const DAILY_HEARTBEAT_BUCKET_MS = 24 * 60 * 60 * 1000;
+/** 没有数据的格子；渲染成灰，不能画成正常。 */
+export const NO_DATA_HEARTBEAT = -1;
+
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 export interface JsonObject {
@@ -53,7 +62,6 @@ export interface PublicService {
   uptime: number;
   heartbeats: number[];
   dailyHeartbeats: number[];
-  latencyHistory: number[];
   latency: number;
   lastCheckAt: number;
   enabled: boolean;

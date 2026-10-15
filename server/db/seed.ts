@@ -2,12 +2,15 @@ import { randomUUID } from 'node:crypto';
 
 import { count } from 'drizzle-orm';
 
+import { DAILY_HEARTBEAT_BUCKET_MS, HEARTBEAT_BUCKET_MS } from '../../shared/public-contract';
 import { hashPassword, validatePassword } from '../auth/password';
 import { loadConfig } from '../config';
 import type { IncidentImpact, IncidentStatus, PublicIncident, PublicMaintenance, ServiceStatus } from '../domain';
 import { heartbeatValueForStatus } from '../domain';
 import { writeAudit } from '../services/audit';
+import { HEARTBEAT_BUCKETS, HISTORY_BUCKETS } from '../services/service-history';
 import { DEFAULT_SITE_CONFIG, rebuildPublicSnapshot } from '../services/snapshot';
+import { STATE_EVENT_REASON } from '../services/state-events';
 import { normalizeUsername } from '../utils/validation';
 import { openDatabase } from './client';
 import { applyMigrations } from './migrate';
@@ -19,6 +22,7 @@ import {
   maintenanceUpdates,
   services,
   serviceSamples,
+  serviceStateEvents,
   siteConfigs,
   users,
 } from './schema';
@@ -106,6 +110,33 @@ function heartbeatValue(status: ServiceStatus): number {
   return heartbeatValueForStatus(status);
 }
 
+/** 演示数据里的状态变迁：起点写自变迁，之后只在状态变化时写。 */
+function writeDemoStateEvent(
+  context: ReturnType<typeof openDatabase>,
+  serviceId: string,
+  point: { at: number; status: ServiceStatus },
+  fromStatus: ServiceStatus,
+  adminId: string,
+  now: number,
+): void {
+  context.db
+    .insert(serviceStateEvents)
+    .values({
+      id: randomUUID(),
+      serviceId,
+      probeId: null,
+      at: point.at,
+      fromStatus,
+      toStatus: point.status,
+      reason: STATE_EVENT_REASON.manual,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: adminId,
+      updatedBy: adminId,
+    })
+    .run();
+}
+
 async function seed(): Promise<void> {
   const config = loadConfig();
   const context = openDatabase(config);
@@ -171,7 +202,9 @@ export async function seedFreshDatabase(
   });
 
   transaction();
-  process.stdout.write(`Seed 完成：管理员 ${adminUsername}、11 个服务、160 个历史事件、4 个计划维护\n`);
+  process.stdout.write(
+    `Seed 完成：管理员 ${adminUsername}、11 个服务（含近 24 小时样本与近 ${HISTORY_BUCKETS} 日状态区间）、160 个历史事件、4 个计划维护\n`,
+  );
   return 'seeded';
 }
 
@@ -211,22 +244,17 @@ function seedDemoData(context: ReturnType<typeof openDatabase>, adminId: string,
       })
       .run();
 
-    for (let day = 59; day >= 0; day -= 1) {
-      const observedAt = now - day * 24 * 60 * 60 * 1000;
-      const degraded = (day + position * 3) % 23 === 0;
-      const down = (day + position * 7) % 53 === 0;
-      let sampleStatus: ServiceStatus = 'up';
-      if (down) sampleStatus = 'down';
-      else if (degraded) sampleStatus = 'degraded';
-      const latency = sampleStatus === 'down' ? 0 : service.baseLatency + ((day * 7 + position) % 35);
+    // 近 24 小时原始样本：每 15 分钟一条，供通栏心跳条。
+    for (let step = HEARTBEAT_BUCKETS - 1; step >= 0; step -= 1) {
+      const latency = service.baseLatency + ((step * 7 + position) % 35);
       context.db
         .insert(serviceSamples)
         .values({
-          id: `${service.id}-sample-${String(day).padStart(2, '0')}`,
+          id: `${service.id}-sample-${String(step).padStart(3, '0')}`,
           serviceId: service.id,
-          observedAt,
-          status: sampleStatus,
-          heartbeatValue: heartbeatValue(sampleStatus),
+          observedAt: now - step * HEARTBEAT_BUCKET_MS,
+          status: 'up',
+          heartbeatValue: heartbeatValue('up'),
           latencyMs: latency,
           createdAt: now,
           updatedAt: now,
@@ -234,6 +262,20 @@ function seedDemoData(context: ReturnType<typeof openDatabase>, adminId: string,
           updatedBy: adminId,
         })
         .run();
+    }
+
+    // 近 60 日状态区间：只在状态变化时写一行，供双列半宽心跳条与可用率。
+    const days: Array<{ at: number; status: ServiceStatus }> = [];
+    for (let day = HISTORY_BUCKETS; day >= 1; day -= 1) {
+      const degraded = (day + position * 3) % 23 === 0;
+      const down = (day + position * 7) % 53 === 0;
+      const status: ServiceStatus = down ? 'down' : degraded ? 'degraded' : 'up';
+      days.push({ at: now - day * DAILY_HEARTBEAT_BUCKET_MS, status });
+    }
+    writeDemoStateEvent(context, service.id, days[0], days[0].status, adminId, now);
+    for (let index = 1; index < days.length; index += 1) {
+      if (days[index].status === days[index - 1].status) continue;
+      writeDemoStateEvent(context, service.id, days[index], days[index - 1].status, adminId, now);
     }
   }
 

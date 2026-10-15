@@ -62,7 +62,7 @@
             </div>
             <heartbeat-bar
               :heartbeats="componentHeartbeats(service, index)"
-              :period-days="isCompactHeartbeat(index) ? COMPACT_HEARTBEAT_DAYS : undefined"
+              :bucket-ms="isCompactHeartbeat(index) ? DAILY_HEARTBEAT_BUCKET_MS : HEARTBEAT_BUCKET_MS"
             />
           </li>
         </ul>
@@ -129,6 +129,7 @@ export default {
 };
 </script>
 <script setup lang="ts">
+import { DAILY_HEARTBEAT_BUCKET_MS, HEARTBEAT_BUCKET_MS } from '@shared/public-contract';
 import { ViewListIcon } from 'tdesign-icons-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';

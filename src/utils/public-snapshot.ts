@@ -8,6 +8,7 @@ import type {
   ServiceStatus,
   SiteConfigValue,
 } from '@shared/public-contract';
+import { NO_DATA_HEARTBEAT } from '@shared/public-contract';
 
 import { DEFAULT_SITE_CONFIG } from '@/constants/site';
 import type { HeartbeatValue, Incident, Maintenance, ServiceMonitor, SiteConfig, StatusSnapshot } from '@/types/status';
@@ -24,12 +25,13 @@ type DeepPartial<T> = T extends (infer U)[]
 
 export type PublicSnapshotPayload = DeepPartial<PublicSnapshotResponse>;
 
-const HEARTBEAT_VALUES = new Set<HeartbeatValue>([0, 1, 2, 3]);
+const HEARTBEAT_VALUES = new Set<HeartbeatValue>([NO_DATA_HEARTBEAT, 0, 1, 2, 3]);
 
 function toHeartbeats(values: unknown): HeartbeatValue[] {
   if (!Array.isArray(values)) return [];
+  // 认不出的取值按"无数据"处理：宁可画灰，也不能画成正常。
   return (values as unknown[]).map((value) =>
-    HEARTBEAT_VALUES.has(value as HeartbeatValue) ? (value as HeartbeatValue) : 1,
+    HEARTBEAT_VALUES.has(value as HeartbeatValue) ? (value as HeartbeatValue) : NO_DATA_HEARTBEAT,
   );
 }
 
@@ -73,7 +75,6 @@ export function mapPublicService(item: DeepPartial<PublicService> & { id: string
     uptime: item.uptime ?? 100,
     heartbeats: toHeartbeats(item.heartbeats),
     dailyHeartbeats: toHeartbeats(item.dailyHeartbeats),
-    latencyHistory: Array.isArray(item.latencyHistory) ? (item.latencyHistory as number[]) : [],
     latency: item.latency ?? 0,
     lastCheckAt: item.lastCheckAt ?? 0,
     enabled: item.enabled !== false,

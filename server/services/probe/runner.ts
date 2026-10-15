@@ -6,18 +6,10 @@ import type { AppDatabase } from '../../db/client';
 import type { ServiceProbeRow } from '../../db/schema';
 import { serviceProbes, services, serviceSamples, serviceStateEvents } from '../../db/schema';
 import type { ServiceStatus } from '../../domain';
-import { heartbeatValueForStatus } from '../../domain';
+import { heartbeatValueForStatus, SERVICE_STATUS_SEVERITY } from '../../domain';
 import { STATE_EVENT_REASON } from '../state-events';
 import type { ProbeRegistry } from './registry';
 import { describeFailure } from './registry';
-
-/** 服务级聚合的严重度排序，取最坏值。 */
-const STATUS_RANK: Record<ServiceStatus, number> = {
-  up: 0,
-  maintenance: 1,
-  degraded: 2,
-  down: 3,
-};
 
 export interface ProbeRunResult {
   status: ServiceStatus;
@@ -121,7 +113,7 @@ export function refreshServiceStatus(db: AppDatabase, serviceId: string, now: nu
 
   let worst: ServiceStatus = 'up';
   for (const probe of reporting) {
-    if (STATUS_RANK[probe.lastStatus] > STATUS_RANK[worst]) worst = probe.lastStatus;
+    if (SERVICE_STATUS_SEVERITY[probe.lastStatus] > SERVICE_STATUS_SEVERITY[worst]) worst = probe.lastStatus;
   }
   const latencyMs = Math.max(...reporting.map((probe) => probe.lastLatencyMs ?? 0));
 

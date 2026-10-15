@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import type { AppDatabase } from '../db/client';
 import {
@@ -11,7 +11,6 @@ import {
   maintenanceUpdates,
   publicSnapshots,
   services,
-  serviceSamples,
   siteConfigs,
 } from '../db/schema';
 import type {
@@ -23,7 +22,7 @@ import type {
   SiteConfigValue,
 } from '../domain';
 import { contentEtag } from '../utils/cache';
-import { sampleWindowStart } from './retention';
+import { buildServiceHistory } from './service-history';
 
 export const DEFAULT_SITE_CONFIG: SiteConfigValue = {
   siteName: '腾讯服务状态',
@@ -171,32 +170,22 @@ function buildServices(db: AppDatabase): PublicService[] {
     .all();
   if (rows.length === 0) return [];
 
-  const samples = db
-    .select()
-    .from(serviceSamples)
-    .where(and(isNull(serviceSamples.deletedAt), gte(serviceSamples.observedAt, sampleWindowStart())))
-    .orderBy(asc(serviceSamples.observedAt))
-    .all();
-  const grouped = new Map<string, typeof samples>();
-  for (const sample of samples) {
-    const values = grouped.get(sample.serviceId) ?? [];
-    values.push(sample);
-    grouped.set(sample.serviceId, values);
-  }
+  const history = buildServiceHistory(
+    db,
+    rows.map((service) => service.id),
+  );
 
   return rows.map((service) => {
-    const values = (grouped.get(service.id) ?? []).slice(-90);
-    const heartbeats = values.map((item) => item.heartbeatValue);
-    const latencyHistory = values.slice(-48).map((item) => item.latencyMs);
+    const record = history.get(service.id);
     return {
       id: service.id,
       name: service.name,
       ...(service.description ? { description: service.description } : {}),
       status: service.status,
-      uptime: service.uptime,
-      heartbeats,
-      dailyHeartbeats: heartbeats.slice(-60),
-      latencyHistory,
+      // 有区间记录时按记录算，否则沿用人工维护的值。
+      uptime: record?.uptime ?? service.uptime,
+      heartbeats: record?.heartbeats ?? [],
+      dailyHeartbeats: record?.dailyHeartbeats ?? [],
       latency: service.latencyMs,
       lastCheckAt: service.lastCheckAt,
       enabled: service.enabled,

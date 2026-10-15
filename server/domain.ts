@@ -51,3 +51,11 @@ export function heartbeatValueForStatus(status: ServiceStatus): number {
   if (status === 'degraded') return 3;
   return 1;
 }
+
+/** 服务状态的严重度排序（越大越严重）；聚合与历史压缩共用同一顺序。 */
+export const SERVICE_STATUS_SEVERITY: Record<ServiceStatus, number> = {
+  up: 0,
+  maintenance: 1,
+  degraded: 2,
+  down: 3,
+};

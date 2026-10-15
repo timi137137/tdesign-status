@@ -2,8 +2,8 @@ import type { IncidentImpact, IncidentStatus, MaintenanceStatus, ServiceStatus }
 
 export type { IncidentImpact, IncidentStatus, MaintenanceStatus, ServiceStatus } from '@shared/public-contract';
 
-/** 单次心跳：1 正常 / 0 异常 / 2 维护 / 3 降级 */
-export type HeartbeatValue = 0 | 1 | 2 | 3;
+/** 单次心跳：1 正常 / 0 异常 / 2 维护 / 3 降级 / -1 无数据（见契约里的 NO_DATA_HEARTBEAT） */
+export type HeartbeatValue = -1 | 0 | 1 | 2 | 3;
 
 export type PublicationStatus = 'draft' | 'published' | 'archived';
 
@@ -25,8 +25,6 @@ export interface ServiceMonitor {
   heartbeats: HeartbeatValue[];
   /** 按天聚合的状态，公开页双列半宽展示近 60 天 */
   dailyHeartbeats: HeartbeatValue[];
-  /** 最近响应时间序列（ms） */
-  latencyHistory: number[];
   /** 当前延迟 ms */
   latency: number;
   /** 上次检测时间戳 */
