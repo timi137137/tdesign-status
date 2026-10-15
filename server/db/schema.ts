@@ -100,6 +100,37 @@ export const services = sqliteTable(
   ],
 );
 
+export const serviceProbes = sqliteTable(
+  'service_probes',
+  {
+    id: text('id').primaryKey(),
+    serviceId: text('service_id')
+      .notNull()
+      .references(() => services.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** 对应探针注册表里的类型名（http / tcp / …）。 */
+    type: text('type').notNull(),
+    target: text('target').notNull(),
+    configJson: text('config_json', { mode: 'json' }).$type<JsonObject>().notNull(),
+    intervalSeconds: integer('interval_seconds').notNull(),
+    region: text('region'),
+    position: integer('position').notNull().default(0),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    lastCheckedAt: integer('last_checked_at'),
+    lastStatus: text('last_status', { enum: SERVICE_STATUSES }),
+    lastLatencyMs: integer('last_latency_ms'),
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+    ...lifecycleColumns(),
+  },
+  (table) => [
+    uniqueIndex('service_probes_service_name_unique')
+      .on(table.serviceId, table.name)
+      .where(sql`${table.deletedAt} is null`),
+    index('service_probes_service_idx').on(table.serviceId, table.position, table.deletedAt),
+    index('service_probes_due_idx').on(table.enabled, table.deletedAt),
+  ],
+);
+
 export const serviceSamples = sqliteTable(
   'service_samples',
   {
@@ -107,6 +138,8 @@ export const serviceSamples = sqliteTable(
     serviceId: text('service_id')
       .notNull()
       .references(() => services.id, { onDelete: 'cascade' }),
+    /** 产出该样本的监控点位；人工写入的样本为空。 */
+    probeId: text('probe_id').references(() => serviceProbes.id, { onDelete: 'cascade' }),
     observedAt: integer('observed_at').notNull(),
     status: text('status', { enum: SERVICE_STATUSES }).notNull(),
     heartbeatValue: integer('heartbeat_value').notNull(),
@@ -118,6 +151,25 @@ export const serviceSamples = sqliteTable(
     index('service_samples_service_time_idx').on(table.serviceId, table.observedAt),
     index('service_samples_retention_idx').on(table.observedAt, table.deletedAt),
   ],
+);
+
+export const serviceStateEvents = sqliteTable(
+  'service_state_events',
+  {
+    id: text('id').primaryKey(),
+    serviceId: text('service_id')
+      .notNull()
+      .references(() => services.id, { onDelete: 'cascade' }),
+    probeId: text('probe_id').references(() => serviceProbes.id, { onDelete: 'cascade' }),
+    /** 状态变迁发生的时间。 */
+    at: integer('at').notNull(),
+    fromStatus: text('from_status', { enum: SERVICE_STATUSES }).notNull(),
+    toStatus: text('to_status', { enum: SERVICE_STATUSES }).notNull(),
+    /** 变迁原因，如 http_500 / timeout / probe_disabled。 */
+    reason: text('reason'),
+    ...lifecycleColumns(),
+  },
+  (table) => [index('service_state_events_service_idx').on(table.serviceId, table.at, table.deletedAt)],
 );
 
 export const incidents = sqliteTable(
@@ -267,6 +319,8 @@ export const publicSnapshots = sqliteTable('public_snapshots', {
 
 export type UserRow = typeof users.$inferSelect;
 export type ServiceRow = typeof services.$inferSelect;
+export type ServiceProbeRow = typeof serviceProbes.$inferSelect;
+export type ServiceStateEventRow = typeof serviceStateEvents.$inferSelect;
 export type IncidentRow = typeof incidents.$inferSelect;
 export type MaintenanceRow = typeof maintenances.$inferSelect;
 export type AuditLogRow = typeof auditLogs.$inferSelect;
