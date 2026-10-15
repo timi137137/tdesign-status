@@ -77,7 +77,7 @@ docker run --rm -p 3000:3000 \
   -e STATUS_ADMIN_PASSWORD='change-me-1234567' \
   -e STATUS_ADMIN_MUST_CHANGE=false \
   -e STATUS_AUTO_SEED=true \
-  -e STATUS_TRUST_PROXY=true \
+  -e STATUS_TRUST_PROXY=false \
   tdesign-status
 ```
 
@@ -90,7 +90,7 @@ docker run --rm -p 3000:3000 \
 | `PORT` / `STATUS_PORT` | Listen port |
 | `STATUS_HOST` | Listen address |
 | `STATUS_AUTO_SEED` | Auto-fill demo data on an empty database |
-| `STATUS_TRUST_PROXY` | Set to `true` behind an HTTPS reverse proxy |
+| `STATUS_TRUST_PROXY` | `false` (default) ignores `X-Forwarded-For`; `true` trusts exactly one hop; also accepts a hop count or a comma-separated proxy IP/CIDR list |
 
 ### Browser support
 

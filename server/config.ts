@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { isIP } from 'node:net';
 import path from 'node:path';
 
 function loadDotEnv(): void {
@@ -37,6 +38,37 @@ function normalizeOrigin(value: string): string {
   return url.origin;
 }
 
+function isTrustedProxyEntry(value: string): boolean {
+  const [address, prefix] = value.split('/');
+  if (prefix !== undefined && !/^\d{1,3}$/.test(prefix)) return false;
+  return isIP(address) !== 0;
+}
+
+/**
+ * Resolves Fastify's `trustProxy`. A blanket `true` makes `request.ip` come from
+ * `X-Forwarded-For`, which any client can forge, so `true` means "exactly one
+ * trusted hop" and self-hosted setups can list their proxy addresses instead.
+ */
+function resolveTrustProxy(onManagedPlatform: boolean): boolean | number | string[] {
+  const raw = process.env.STATUS_TRUST_PROXY?.trim();
+  if (!raw || raw === '0' || raw.toLowerCase() === 'false') {
+    // Managed platforms always sit behind their own edge proxy, which appends
+    // the real client address; trusting that single hop is safe there.
+    return onManagedPlatform ? 1 : false;
+  }
+  if (raw === '1' || raw.toLowerCase() === 'true') return 1;
+  if (/^\d+$/.test(raw)) return Number.parseInt(raw, 10);
+  const list = raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const invalid = list.filter((item) => !isTrustedProxyEntry(item));
+  if (invalid.length > 0) {
+    throw new Error(`STATUS_TRUST_PROXY 只能包含 IP/CIDR 或跳数，收到：${invalid.join(', ')}`);
+  }
+  return list;
+}
+
 export interface ServerConfig {
   readonly env: 'development' | 'test' | 'production';
   readonly host: string;
@@ -51,7 +83,7 @@ export interface ServerConfig {
   readonly loginRateLimitWindow: string;
   readonly publicCacheSeconds: number;
   readonly allowedOrigins: ReadonlySet<string>;
-  readonly trustProxy: boolean;
+  readonly trustProxy: boolean | number | string[];
   readonly bodyLimit: number;
   readonly autoSeed: boolean;
 }
@@ -120,7 +152,7 @@ export function loadConfig(): ServerConfig {
     loginRateLimitWindow: process.env.STATUS_LOGIN_RATE_WINDOW || '1 minute',
     publicCacheSeconds: positiveInteger(process.env.STATUS_PUBLIC_CACHE_SECONDS, 30),
     allowedOrigins,
-    trustProxy: booleanValue(process.env.STATUS_TRUST_PROXY, onManagedPlatform),
+    trustProxy: resolveTrustProxy(onManagedPlatform),
     bodyLimit: positiveInteger(process.env.STATUS_BODY_LIMIT, 1024 * 1024),
     autoSeed: booleanValue(process.env.STATUS_AUTO_SEED, onManagedPlatform),
   };

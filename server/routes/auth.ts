@@ -71,14 +71,23 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return unauthorized('用户名或密码错误');
       }
 
+      // A locked account answers exactly like a wrong password: replying 429 or
+      // naming the lock would tell an unauthenticated caller that the account
+      // exists. The lock itself is recorded by `auth.account_locked`.
       if (user.lockedUntil && user.lockedUntil > now) {
         await burnPasswordVerification(password);
-        throw new ApiError(429, 'LOGIN_LOCKED', '登录失败次数过多，请稍后重试');
+        return unauthorized('用户名或密码错误');
       }
+
+      // A lock window that has already elapsed ends the failure streak. Without
+      // this reset a single request per window would keep extending the lock and
+      // hold the account, including the last administrator, locked indefinitely.
+      const lockExpired = user.lockedUntil !== null && user.lockedUntil <= now;
 
       const valid = await verifyPassword(password, user.passwordHash);
       if (!valid) {
-        const failedLoginCount = user.failedLoginCount + 1;
+        const priorFailures = lockExpired ? 0 : user.failedLoginCount;
+        const failedLoginCount = Math.min(priorFailures + 1, MAX_FAILED_LOGINS);
         const lockedUntil = failedLoginCount >= MAX_FAILED_LOGINS ? now + ACCOUNT_LOCK_MS : null;
         app.db
           .update(users)
@@ -94,8 +103,16 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           action: 'auth.login_failed',
           entityType: 'user',
           entityId: user.id,
-          metadata: { failedLoginCount },
+          metadata: { failedLoginCount, lockedUntil },
         });
+        if (lockedUntil !== null) {
+          writeAudit(app.db, request, {
+            action: 'auth.account_locked',
+            entityType: 'user',
+            entityId: user.id,
+            metadata: { failedLoginCount, lockedUntil, lockMs: ACCOUNT_LOCK_MS },
+          });
+        }
         return unauthorized('用户名或密码错误');
       }
 

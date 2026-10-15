@@ -46,7 +46,7 @@ docker run --rm -p 3000:3000 \
 | `PORT` | 托管平台注入（Render 默认 10000）；托管上优先于 `STATUS_PORT` |
 | `STATUS_PORT` | 本地开发用；勿在 Render 上设成 3000 盖住平台 `PORT` |
 | `STATUS_HOST` | 托管上为 `0.0.0.0`（勿用 `127.0.0.1`） |
-| `STATUS_TRUST_PROXY` | 托管上为 `true` |
+| `STATUS_TRUST_PROXY` | 托管上为 `true`（只信任边缘代理追加的那一跳）；自建反代建议填可信代理 IP/CIDR 列表 |
 | `STATUS_AUTO_SEED` | 免费无盘时 `true` |
 | `STATUS_COOKIE_SECURE` | HTTPS 下开启 |
 | `STATUS_ADMIN_USERNAME` / `STATUS_ADMIN_PASSWORD` | 自动 seed 时必填 |

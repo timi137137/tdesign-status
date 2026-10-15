@@ -26,6 +26,17 @@ function apiErrorPayload(code: string, message: string, data: unknown = null) {
   return { code, data, message };
 }
 
+type FastifyTrustProxy = boolean | string | string[] | ((address: string, hop: number) => boolean);
+
+/**
+ * Fastify's option type omits numeric hop counts even though its runtime accepts
+ * them, so a hop count is translated into the equivalent trust predicate.
+ */
+function toFastifyTrustProxy(value: ServerConfig['trustProxy']): FastifyTrustProxy {
+  if (typeof value === 'number') return (_address, hop) => hop < value;
+  return value;
+}
+
 export async function buildApp(config: ServerConfig = loadConfig()): Promise<FastifyInstance> {
   const database = openDatabase(config);
   try {
@@ -57,7 +68,7 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
         censor: '[REDACTED]',
       },
     },
-    trustProxy: config.trustProxy,
+    trustProxy: toFastifyTrustProxy(config.trustProxy),
     bodyLimit: config.bodyLimit,
     forceCloseConnections: 'idle',
     requestIdHeader: 'x-request-id',

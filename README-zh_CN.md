@@ -77,7 +77,7 @@ docker run --rm -p 3000:3000 \
   -e STATUS_ADMIN_PASSWORD='change-me-1234567' \
   -e STATUS_ADMIN_MUST_CHANGE=false \
   -e STATUS_AUTO_SEED=true \
-  -e STATUS_TRUST_PROXY=true \
+  -e STATUS_TRUST_PROXY=false \
   tdesign-status
 ```
 
@@ -90,7 +90,7 @@ docker run --rm -p 3000:3000 \
 | `PORT` / `STATUS_PORT` | 监听端口 |
 | `STATUS_HOST` | 监听地址 |
 | `STATUS_AUTO_SEED` | 自动填充模拟数据 |
-| `STATUS_TRUST_PROXY` | 反代 HTTPS 时设为 `true` |
+| `STATUS_TRUST_PROXY` | 默认 `false` 不信任 `X-Forwarded-For`；`true` 只信任 1 跳；也可填跳数或可信代理 IP/CIDR 列表 |
 
 ### 浏览器兼容
 

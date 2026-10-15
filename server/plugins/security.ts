@@ -77,14 +77,13 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
     global: false,
     max: app.appConfig.loginRateLimitMax,
     timeWindow: app.appConfig.loginRateLimitWindow,
-    errorResponseBuilder: (_request, context) => ({
-      code: 'RATE_LIMITED',
-      data: {
+    // The plugin throws this value, so it has to be an Error with a statusCode;
+    // a plain object reaches the error handler as an unmapped 500.
+    errorResponseBuilder: (_request, context) =>
+      new ApiError(429, 'RATE_LIMITED', '登录尝试过于频繁，请稍后重试', {
         after: context.after,
         max: context.max,
-      },
-      message: '登录尝试过于频繁，请稍后重试',
-    }),
+      }),
   });
 
   app.decorateRequest('principal', null);
