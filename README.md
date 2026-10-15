@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/badge/node-%3E%3D20.19%20%3C25-brightgreen" alt="node compatibility"></a>
+  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen" alt="node compatibility"></a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
@@ -33,7 +33,7 @@ Stack: `Vue 3` + `Vite` + `Pinia` + `TDesign` on the front end; `Fastify` + `SQL
 
 ### Requirements
 
-- Node.js `>=20.19.0 <25` (tooling such as ESLint 10 works best on 20.19+, 22.13+, or 24+)
+- Node.js `>=24` (the `node:24` Docker image, `nodejs_24` Nix package, and Render's `yarn` build all target this)
 - The host must be able to compile `better-sqlite3` (Python + a C++ toolchain)
 
 ### Quick start
@@ -42,15 +42,27 @@ Stack: `Vue 3` + `Vite` + `Pinia` + `TDesign` on the front end; `Fastify` + `SQL
 cp .env.example .env
 # set STATUS_ADMIN_USERNAME / STATUS_ADMIN_PASSWORD
 
-npm install
+npm ci
 npm run db:migrate
 npm run db:seed
 npm run dev
 ```
 
+`yarn install --frozen-lockfile` works the same way; `yarn.lock` is committed for Render.
+
 - App / API (dev): `http://127.0.0.1:3000` (see `.env`)
 - Vite client (dev): usually `http://127.0.0.1:3002`
 - Readiness probe: `GET /api/health/live`
+
+### Checks
+
+```bash
+npm run lint        # eslint + prettier + vue rules (fails on warnings)
+npm run stylelint
+npm run typecheck   # vue-tsc for src, tsc for server
+npm run test
+npm run build       # vue-tsc + vite production build
+```
 
 ### Deploy
 

@@ -1,5 +1,19 @@
-import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
 
+import type { AppDatabase } from '../db/client';
+import {
+  entityServices,
+  type IncidentRow,
+  incidents,
+  incidentUpdates,
+  type MaintenanceRow,
+  maintenances,
+  maintenanceUpdates,
+  publicSnapshots,
+  services,
+  serviceSamples,
+  siteConfigs,
+} from '../db/schema';
 import type {
   OverallStatusSummary,
   PublicIncident,
@@ -8,21 +22,8 @@ import type {
   PublicSnapshotValue,
   SiteConfigValue,
 } from '../domain';
-import type { AppDatabase } from '../db/client';
-import {
-  entityServices,
-  incidents,
-  incidentUpdates,
-  maintenances,
-  maintenanceUpdates,
-  publicSnapshots,
-  serviceSamples,
-  services,
-  siteConfigs,
-  type IncidentRow,
-  type MaintenanceRow,
-} from '../db/schema';
 import { contentEtag } from '../utils/cache';
+import { sampleWindowStart } from './retention';
 
 export const DEFAULT_SITE_CONFIG: SiteConfigValue = {
   siteName: '腾讯服务状态',
@@ -93,11 +94,7 @@ function summarize(items: PublicService[]): OverallStatusSummary {
   };
 }
 
-function affectedServiceIds(
-  db: AppDatabase,
-  entityType: 'incident' | 'maintenance',
-  entityId: string,
-): string[] {
+function affectedServiceIds(db: AppDatabase, entityType: 'incident' | 'maintenance', entityId: string): string[] {
   return db
     .select({ serviceId: entityServices.serviceId })
     .from(entityServices)
@@ -112,19 +109,11 @@ function affectedServiceIds(
     .map((item) => item.serviceId);
 }
 
-export function materializeIncident(
-  db: AppDatabase,
-  incident: IncidentRow,
-): PublicIncident {
+export function materializeIncident(db: AppDatabase, incident: IncidentRow): PublicIncident {
   const updates = db
     .select()
     .from(incidentUpdates)
-    .where(
-      and(
-        eq(incidentUpdates.incidentId, incident.id),
-        isNull(incidentUpdates.deletedAt),
-      ),
-    )
+    .where(and(eq(incidentUpdates.incidentId, incident.id), isNull(incidentUpdates.deletedAt)))
     .orderBy(asc(incidentUpdates.occurredAt))
     .all();
   return {
@@ -146,19 +135,11 @@ export function materializeIncident(
   };
 }
 
-export function materializeMaintenance(
-  db: AppDatabase,
-  maintenance: MaintenanceRow,
-): PublicMaintenance {
+export function materializeMaintenance(db: AppDatabase, maintenance: MaintenanceRow): PublicMaintenance {
   const updates = db
     .select()
     .from(maintenanceUpdates)
-    .where(
-      and(
-        eq(maintenanceUpdates.maintenanceId, maintenance.id),
-        isNull(maintenanceUpdates.deletedAt),
-      ),
-    )
+    .where(and(eq(maintenanceUpdates.maintenanceId, maintenance.id), isNull(maintenanceUpdates.deletedAt)))
     .orderBy(asc(maintenanceUpdates.occurredAt))
     .all();
   return {
@@ -193,7 +174,7 @@ function buildServices(db: AppDatabase): PublicService[] {
   const samples = db
     .select()
     .from(serviceSamples)
-    .where(isNull(serviceSamples.deletedAt))
+    .where(and(isNull(serviceSamples.deletedAt), gte(serviceSamples.observedAt, sampleWindowStart())))
     .orderBy(asc(serviceSamples.observedAt))
     .all();
   const grouped = new Map<string, typeof samples>();
@@ -230,11 +211,7 @@ function publishedIncidents(db: AppDatabase): PublicIncident[] {
     .select({ payload: incidents.publishedJson })
     .from(incidents)
     .where(
-      and(
-        eq(incidents.publishState, 'published'),
-        isNotNull(incidents.publishedJson),
-        isNull(incidents.deletedAt),
-      ),
+      and(eq(incidents.publishState, 'published'), isNotNull(incidents.publishedJson), isNull(incidents.deletedAt)),
     )
     .orderBy(desc(incidents.startedAt))
     .all()
@@ -294,7 +271,10 @@ export function buildSnapshot(db: AppDatabase): PublicSnapshotValue {
   };
 }
 
-export function rebuildPublicSnapshot(db: AppDatabase, actorUserId?: string): {
+export function rebuildPublicSnapshot(
+  db: AppDatabase,
+  actorUserId?: string,
+): {
   etag: string;
   lastModified: number;
   version: number;
@@ -302,11 +282,7 @@ export function rebuildPublicSnapshot(db: AppDatabase, actorUserId?: string): {
   const payload = buildSnapshot(db);
   const etag = contentEtag(payload);
   const now = payload.generatedAt;
-  const current = db
-    .select()
-    .from(publicSnapshots)
-    .where(eq(publicSnapshots.id, 'current'))
-    .get();
+  const current = db.select().from(publicSnapshots).where(eq(publicSnapshots.id, 'current')).get();
 
   if (!current) {
     db.insert(publicSnapshots)

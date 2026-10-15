@@ -45,13 +45,11 @@
     <t-empty v-if="!groups.length" description="暂无历史记录" />
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'HistoryList',
 };
 </script>
-
 <script setup lang="ts">
 import { computed, resolveComponent } from 'vue';
 
@@ -62,12 +60,12 @@ import { formatStatusTime } from '@/utils/status-date';
 
 import { historyDayKey } from '../history-batch';
 
-type HistoryFeedEntry = {
+interface HistoryFeedEntry {
   type: 'incident' | 'maintenance';
   at: number;
   incident?: Incident;
   maintenance?: Maintenance;
-};
+}
 
 const props = defineProps<{
   entries: HistoryFeedEntry[];
@@ -109,7 +107,6 @@ const groups = computed(() => {
   return Object.values(result);
 });
 </script>
-
 <style lang="less" scoped>
 .history-list--cards {
   display: flex;

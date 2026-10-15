@@ -10,13 +10,11 @@
     />
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'HeartbeatBar',
 };
 </script>
-
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import { computed } from 'vue';
@@ -65,7 +63,6 @@ const beatTitle = (beat: HeartbeatValue, index: number) => {
   return `#${index + 1} ${label}`;
 };
 </script>
-
 <style lang="less" scoped>
 .heartbeat-bar {
   display: flex;
@@ -84,7 +81,9 @@ const beatTitle = (beat: HeartbeatValue, index: number) => {
   min-width: 0;
   border-radius: 2px;
   transform-origin: center;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {

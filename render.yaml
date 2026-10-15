@@ -3,8 +3,8 @@ services:
     name: tdesign-status
     runtime: node
     plan: free
-    buildCommand: npm install --include=dev --legacy-peer-deps && npm run build
-    startCommand: npm start
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    startCommand: yarn start
     healthCheckPath: /api/health/live
     envVars:
       - key: NODE_ENV

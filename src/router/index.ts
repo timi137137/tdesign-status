@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory, RouteRecordRaw, useRoute } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory, useRoute } from 'vue-router';
 
 import { retryImport } from '@/utils/retry-import';
 

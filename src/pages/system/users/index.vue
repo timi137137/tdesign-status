@@ -109,18 +109,18 @@
     </t-dialog>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'SystemUsers',
 };
 </script>
-
 <script setup lang="ts">
-import { DialogPlugin, MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
-import { adminApi, type AdminUser } from '@/api/admin';
+import type { AdminUser } from '@/api/admin';
+import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/http';
 import { ROLE_LABEL } from '@/constants/roles';
 import { useUserStore } from '@/store';
@@ -294,7 +294,6 @@ onMounted(() => {
   loadUsers();
 });
 </script>
-
 <style lang="less" scoped>
 .user-admin {
   display: grid;

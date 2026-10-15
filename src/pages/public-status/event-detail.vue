@@ -67,13 +67,11 @@
     </template>
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicEventDetail',
 };
 </script>
-
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 
@@ -143,7 +141,6 @@ watch(
   { immediate: true },
 );
 </script>
-
 <style lang="less" scoped>
 .event-detail {
   padding-bottom: 8px;

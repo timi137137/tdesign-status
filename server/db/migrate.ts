@@ -1,7 +1,8 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 
 import { loadConfig } from '../config';
-import { type DatabaseContext, openDatabase } from './client';
+import type { DatabaseContext } from './client';
+import { openDatabase } from './client';
 
 export function applyMigrations(context: DatabaseContext, migrationsFolder: string): void {
   migrate(context.db, { migrationsFolder });

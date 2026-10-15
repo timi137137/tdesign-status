@@ -1,8 +1,10 @@
+import path from 'node:path';
+
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
-import path from 'path';
 import Components from 'unplugin-vue-components/vite';
-import { ConfigEnv, loadEnv, UserConfig } from 'vite';
+import type { ConfigEnv, UserConfig } from 'vite';
+import { loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import svgLoader from 'vite-svg-loader';
 
@@ -69,6 +71,7 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@shared': path.resolve(__dirname, './shared'),
       },
     },
 

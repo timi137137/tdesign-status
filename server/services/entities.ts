@@ -22,7 +22,7 @@ export function syncEntityServices(
       .where(and(inArray(services.id, uniqueIds), isNull(services.deletedAt)))
       .all();
     if (valid.length !== uniqueIds.length) {
-      return badRequest('affectedServiceIds 包含不存在或已删除的服务');
+      badRequest('affectedServiceIds 包含不存在或已删除的服务');
     }
   }
 

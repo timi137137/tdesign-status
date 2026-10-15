@@ -1,7 +1,6 @@
 <template>
-  <div :class="prefix + '-footer'">{{ footerText }}</div>
+  <div :class="`${prefix}-footer`">{{ footerText }}</div>
 </template>
-
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 
@@ -34,7 +33,6 @@ onMounted(async () => {
   }
 });
 </script>
-
 <style lang="less" scoped>
 .@{starter-prefix}-footer {
   color: var(--td-text-color-placeholder);

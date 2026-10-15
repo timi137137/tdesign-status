@@ -1,77 +1,39 @@
-import { DEFAULT_SITE_CONFIG } from '@/constants/site';
 import type {
-  HeartbeatValue,
-  Incident,
-  Maintenance,
   OverallStatusSummary,
-  ServiceMonitor,
+  PublicHistoryEntry,
+  PublicIncident,
+  PublicMaintenance,
+  PublicService,
+  PublicSnapshotResponse,
   ServiceStatus,
-  SiteConfig,
-  StatusSnapshot,
-} from '@/types/status';
+  SiteConfigValue,
+} from '@shared/public-contract';
 
-export interface PublicSiteConfigPayload {
-  siteName?: string;
-  title?: string;
-  description?: string;
-  locale?: string;
-  timezone?: string;
-  logoUrl?: string;
-  supportUrl?: string;
-  componentSubtitle?: string;
-  historySubtitle?: string;
-  footerText?: string;
-  adminFooterText?: string;
-}
+import { DEFAULT_SITE_CONFIG } from '@/constants/site';
+import type { HeartbeatValue, Incident, Maintenance, ServiceMonitor, SiteConfig, StatusSnapshot } from '@/types/status';
 
-export interface PublicServicePayload {
-  id: string;
-  name: string;
-  description?: string;
-  status: ServiceStatus;
-  uptime?: number;
-  heartbeats?: number[];
-  dailyHeartbeats?: number[];
-  latencyHistory?: number[];
-  latency?: number;
-  latencyMs?: number;
-  lastCheckAt?: number;
-  enabled?: boolean;
-  order?: number;
-  position?: number;
-  version?: number;
-  updatedAt?: number;
-}
+/**
+ * Deep-optional view of the shared wire contract: the service worker may replay
+ * a snapshot cached by an older build, so every field has to be tolerated.
+ */
+type DeepPartial<T> = T extends (infer U)[]
+  ? Array<DeepPartial<U>>
+  : T extends object
+    ? { [K in keyof T]?: DeepPartial<T[K]> }
+    : T;
 
-export interface PublicHistoryItemPayload {
-  type: 'incident' | 'maintenance';
-  at: number;
-  incident?: Incident;
-  maintenance?: Maintenance;
-}
-
-export interface PublicSnapshotPayload {
-  generatedAt?: number;
-  version?: number;
-  siteConfig?: PublicSiteConfigPayload;
-  site?: SiteConfig;
-  services?: PublicServicePayload[];
-  overall?: OverallStatusSummary;
-  activeIncidents?: Incident[];
-  activeMaintenances?: Maintenance[];
-  recentHistory?: PublicHistoryItemPayload[];
-  incidents?: Incident[];
-  maintenances?: Maintenance[];
-}
+export type PublicSnapshotPayload = DeepPartial<PublicSnapshotResponse>;
 
 const HEARTBEAT_VALUES = new Set<HeartbeatValue>([0, 1, 2, 3]);
 
 function toHeartbeats(values: unknown): HeartbeatValue[] {
   if (!Array.isArray(values)) return [];
-  return values.map((value) => (HEARTBEAT_VALUES.has(value as HeartbeatValue) ? (value as HeartbeatValue) : 1));
+  return (values as unknown[]).map((value) =>
+    HEARTBEAT_VALUES.has(value as HeartbeatValue) ? (value as HeartbeatValue) : 1,
+  );
 }
 
-function mergeById<T extends { id: string }>(...lists: Array<T[] | undefined>): T[] {
+function mergeById<T extends { id: string }>(...lists: Array<Array<T | undefined> | undefined>): T[] {
   const map = new Map<string, T>();
   lists.forEach((list) => {
     (list || []).forEach((item) => {
@@ -81,7 +43,7 @@ function mergeById<T extends { id: string }>(...lists: Array<T[] | undefined>): 
   return [...map.values()];
 }
 
-export function mapPublicSiteConfig(raw?: PublicSiteConfigPayload, fallback?: SiteConfig): SiteConfig {
+export function mapPublicSiteConfig(raw?: DeepPartial<SiteConfigValue>, fallback?: SiteConfig): SiteConfig {
   const base = fallback || DEFAULT_SITE_CONFIG;
   const siteName = raw?.siteName?.trim() || base.siteName;
   const title = raw?.title?.trim() || base.text.headerTitle;
@@ -102,50 +64,59 @@ export function mapPublicSiteConfig(raw?: PublicSiteConfigPayload, fallback?: Si
   };
 }
 
-export function mapPublicService(item: PublicServicePayload): ServiceMonitor {
+export function mapPublicService(item: DeepPartial<PublicService> & { id: string; name: string }): ServiceMonitor {
   return {
     id: item.id,
     name: item.name,
     description: item.description,
-    status: item.status,
+    status: (item.status ?? 'up') as ServiceStatus,
     uptime: item.uptime ?? 100,
     heartbeats: toHeartbeats(item.heartbeats),
     dailyHeartbeats: toHeartbeats(item.dailyHeartbeats),
-    latencyHistory: Array.isArray(item.latencyHistory) ? item.latencyHistory : [],
-    latency: item.latency ?? item.latencyMs ?? 0,
+    latencyHistory: Array.isArray(item.latencyHistory) ? (item.latencyHistory as number[]) : [],
+    latency: item.latency ?? 0,
     lastCheckAt: item.lastCheckAt ?? 0,
     enabled: item.enabled !== false,
-    order: item.order ?? item.position ?? 0,
+    order: item.order ?? 0,
     autoSimulate: false,
     version: item.version,
-    updatedAt: item.updatedAt,
+  };
+}
+
+function emptyOverall(): OverallStatusSummary {
+  return {
+    status: 'up',
+    title: DEFAULT_SITE_CONFIG.text.overallTitles.up,
+    message: DEFAULT_SITE_CONFIG.text.overallMessages.up,
+    upCount: 0,
+    downCount: 0,
+    maintenanceCount: 0,
+    degradedCount: 0,
+    total: 0,
   };
 }
 
 export function mapPublicSnapshot(raw: PublicSnapshotPayload): StatusSnapshot {
   const recentIncidents = (raw.recentHistory || [])
-    .filter((item) => item.type === 'incident' && item.incident)
+    .filter(
+      (item): item is DeepPartial<PublicHistoryEntry> & { incident: PublicIncident } =>
+        item?.type === 'incident' && Boolean(item.incident),
+    )
     .map((item) => item.incident as Incident);
   const recentMaintenances = (raw.recentHistory || [])
-    .filter((item) => item.type === 'maintenance' && item.maintenance)
+    .filter(
+      (item): item is DeepPartial<PublicHistoryEntry> & { maintenance: PublicMaintenance } =>
+        item?.type === 'maintenance' && Boolean(item.maintenance),
+    )
     .map((item) => item.maintenance as Maintenance);
 
   return {
     version: raw.version ?? 0,
     generatedAt: raw.generatedAt || Date.now(),
-    site: raw.site || mapPublicSiteConfig(raw.siteConfig),
-    overall: raw.overall || {
-      status: 'up',
-      title: DEFAULT_SITE_CONFIG.text.overallTitles.up,
-      message: DEFAULT_SITE_CONFIG.text.overallMessages.up,
-      upCount: 0,
-      downCount: 0,
-      maintenanceCount: 0,
-      degradedCount: 0,
-      total: 0,
-    },
-    services: (raw.services || []).map(mapPublicService),
-    incidents: mergeById(raw.incidents, raw.activeIncidents, recentIncidents),
-    maintenances: mergeById(raw.maintenances, raw.activeMaintenances, recentMaintenances),
+    site: mapPublicSiteConfig(raw.siteConfig),
+    overall: (raw.overall as OverallStatusSummary) || emptyOverall(),
+    services: (raw.services || []).map((item) => mapPublicService(item as PublicService)),
+    incidents: mergeById(raw.activeIncidents as Incident[], recentIncidents),
+    maintenances: mergeById(raw.activeMaintenances as Maintenance[], recentMaintenances),
   };
 }

@@ -7,9 +7,9 @@
         <h1 class="title margin-no">登录到</h1>
         <h1 class="title">服务状态管理后台</h1>
         <div class="sub-title">
-          <p class="tip">{{ type == 'register' ? '已有账号?' : '没有账号吗?' }}</p>
-          <p class="tip" @click="switchType(type == 'register' ? 'login' : 'register')">
-            {{ type == 'register' ? '登录' : '注册新账号' }}
+          <p class="tip">{{ type === 'register' ? '已有账号?' : '没有账号吗?' }}</p>
+          <p class="tip" @click="switchType(type === 'register' ? 'login' : 'register')">
+            {{ type === 'register' ? '登录' : '注册新账号' }}
           </p>
         </div>
       </div>
@@ -50,7 +50,6 @@ onMounted(() => {
   void statusStore.loadSnapshot();
 });
 </script>
-
 <style lang="less" scoped>
 @import './index.less';
 </style>

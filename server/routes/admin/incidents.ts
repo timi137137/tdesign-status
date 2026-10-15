@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
 import type { AppDatabase } from '../../db/client';
 import { incidents, incidentUpdates } from '../../db/schema';
-import { INCIDENT_IMPACTS, INCIDENT_STATUSES, PUBLISH_STATES } from '../../domain';
+import { canTransitionIncidentStatus, INCIDENT_IMPACTS, INCIDENT_STATUSES, PUBLISH_STATES } from '../../domain';
 import { softDeleteEntityServices, syncEntityServices } from '../../services/entities';
 import { materializeIncident } from '../../services/snapshot';
-import { conflict, notFound, ok } from '../../utils/api';
+import { badRequest, conflict, notFound, ok } from '../../utils/api';
 import {
   enumValue,
   expectedVersion,
@@ -26,6 +27,7 @@ import {
   actorId,
   ADMIN_READ_ROLES,
   auditAndRebuild,
+  auditAndRebuildNow,
   CONTENT_WRITE_ROLES,
   entityIdsForService,
   incidentView,
@@ -41,28 +43,39 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
     const impact = optionalEnumValue(query, 'impact', INCIDENT_IMPACTS);
     const publishState = optionalEnumValue(query, 'publishState', PUBLISH_STATES);
     const serviceId = optionalString(query, 'serviceId', 64);
-    const relatedIds = serviceId ? entityIdsForService(app, 'incident', serviceId) : null;
+    const relatedIds = serviceId ? [...entityIdsForService(app, 'incident', serviceId)] : null;
+
+    const conditions: SQL[] = [isNull(incidents.deletedAt)];
+    if (search) conditions.push(like(sql`lower(${incidents.title})`, `%${search}%`));
+    if (status) conditions.push(eq(incidents.status, status));
+    if (impact) conditions.push(eq(incidents.impact, impact));
+    if (publishState) conditions.push(eq(incidents.publishState, publishState));
+    if (relatedIds) {
+      if (relatedIds.length === 0) {
+        return ok(reply, {
+          items: [],
+          pagination: { page: page.page, pageSize: page.pageSize, total: 0, totalPages: 0 },
+        });
+      }
+      conditions.push(inArray(incidents.id, relatedIds));
+    }
+    const where = and(...conditions);
+    const total = app.db.select({ value: count() }).from(incidents).where(where).get()?.value ?? 0;
     const rows = app.db
       .select()
       .from(incidents)
-      .where(isNull(incidents.deletedAt))
+      .where(where)
       .orderBy(desc(incidents.startedAt))
-      .all()
-      .filter((row) => {
-        if (search && !row.title.toLocaleLowerCase('zh-CN').includes(search)) return false;
-        if (status && row.status !== status) return false;
-        if (impact && row.impact !== impact) return false;
-        if (publishState && row.publishState !== publishState) return false;
-        if (relatedIds && !relatedIds.has(row.id)) return false;
-        return true;
-      });
+      .limit(page.pageSize)
+      .offset(page.offset)
+      .all();
     return ok(reply, {
-      items: rows.slice(page.offset, page.offset + page.pageSize).map((row) => incidentView(app, row)),
+      items: rows.map((row) => incidentView(app, row)),
       pagination: {
         page: page.page,
         pageSize: page.pageSize,
-        total: rows.length,
-        totalPages: Math.ceil(rows.length / page.pageSize),
+        total,
+        totalPages: Math.ceil(total / page.pageSize),
       },
     });
   });
@@ -144,6 +157,9 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
         .get();
       if (!current) return notFound('事件不存在');
       const nextStatus = optionalEnumValue(body, 'status', INCIDENT_STATUSES) ?? current.status;
+      if (!canTransitionIncidentStatus(current.status, nextStatus)) {
+        return badRequest(`不允许从 ${current.status} 变更为 ${nextStatus}`);
+      }
       const now = Date.now();
       const affectedServiceIds =
         body.affectedServiceIds === undefined ? undefined : requiredStringArray(body, 'affectedServiceIds');
@@ -153,7 +169,7 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
         status: nextStatus,
         startedAt: optionalInteger(body, 'startedAt', 0) ?? current.startedAt,
         resolvedAt:
-          nextStatus === 'resolved' ? optionalInteger(body, 'resolvedAt', 0) ?? current.resolvedAt ?? now : null,
+          nextStatus === 'resolved' ? (optionalInteger(body, 'resolvedAt', 0) ?? current.resolvedAt ?? now) : null,
       };
       const before = incidentView(app, current);
       app.db.transaction((tx) => {
@@ -167,7 +183,7 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
           })
           .where(and(eq(incidents.id, current.id), eq(incidents.version, version), isNull(incidents.deletedAt)))
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         if (affectedServiceIds) {
           syncEntityServices(
             tx as unknown as AppDatabase,
@@ -204,6 +220,9 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
         .get();
       if (!current) return notFound('事件不存在');
       const status = enumValue(body, 'status', INCIDENT_STATUSES);
+      if (!canTransitionIncidentStatus(current.status, status)) {
+        return badRequest(`不允许从 ${current.status} 变更为 ${status}`);
+      }
       const now = Date.now();
       const updateId = randomUUID();
       app.db.transaction((tx) => {
@@ -218,7 +237,7 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
           })
           .where(and(eq(incidents.id, current.id), eq(incidents.version, version), isNull(incidents.deletedAt)))
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         tx.insert(incidentUpdates)
           .values({
             id: updateId,
@@ -289,9 +308,9 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
           })
           .where(and(eq(incidents.id, current.id), eq(incidents.version, version), isNull(incidents.deletedAt)))
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
       });
-      auditAndRebuild(app, request, {
+      auditAndRebuildNow(app, request, {
         action: 'incident.published',
         entityType: 'incident',
         entityId: current.id,
@@ -330,7 +349,7 @@ export async function registerIncidentRoutes(app: FastifyInstance): Promise<void
           })
           .where(and(eq(incidents.id, current.id), eq(incidents.version, version), isNull(incidents.deletedAt)))
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         tx.update(incidentUpdates)
           .set({
             deletedAt: now,

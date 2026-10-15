@@ -1,17 +1,13 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
+import type { JsonObject, PublicIncident, PublicMaintenance, PublicSnapshotValue, SiteConfigValue } from '../domain';
 import {
   INCIDENT_IMPACTS,
   INCIDENT_STATUSES,
-  type JsonObject,
   MAINTENANCE_STATUSES,
-  type PublicIncident,
-  type PublicMaintenance,
-  type PublicSnapshotValue,
   PUBLISH_STATES,
   SERVICE_STATUSES,
-  type SiteConfigValue,
   USER_ROLES,
 } from '../domain';
 
@@ -45,7 +41,9 @@ export const users = sqliteTable(
     ...lifecycleColumns(),
   },
   (table) => [
-    uniqueIndex('users_username_unique').on(table.username),
+    uniqueIndex('users_username_unique')
+      .on(table.username)
+      .where(sql`${table.deletedAt} is null`),
     index('users_role_active_idx').on(table.role, table.isActive, table.deletedAt),
   ],
 );
@@ -95,7 +93,9 @@ export const services = sqliteTable(
     ...lifecycleColumns(),
   },
   (table) => [
-    uniqueIndex('services_slug_unique').on(table.slug),
+    uniqueIndex('services_slug_unique')
+      .on(table.slug)
+      .where(sql`${table.deletedAt} is null`),
     index('services_public_order_idx').on(table.enabled, table.position, table.deletedAt),
   ],
 );
@@ -227,7 +227,9 @@ export const dashboardLayouts = sqliteTable(
     ...lifecycleColumns(),
   },
   (table) => [
-    uniqueIndex('dashboard_layouts_user_name_unique').on(table.userId, table.name),
+    uniqueIndex('dashboard_layouts_user_name_unique')
+      .on(table.userId, table.name)
+      .where(sql`${table.deletedAt} is null`),
     index('dashboard_layouts_user_idx').on(table.userId, table.deletedAt),
   ],
 );

@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
     },
   },
   test: {
@@ -16,8 +17,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/pages/public-status/history-batch.ts', 'server/src/**/*.ts'],
-      exclude: ['server/src/index.ts', 'server/src/db/seed.ts'],
+      include: ['src/pages/public-status/history-batch.ts', 'server/**/*.ts', 'shared/**/*.ts'],
+      exclude: ['server/index.ts', 'server/db/seed.ts'],
     },
   },
 });

@@ -59,10 +59,10 @@ export interface ServerConfig {
 function detectsManagedPlatform(): boolean {
   return Boolean(
     process.env.RENDER ||
-      process.env.KOYEB_APP_ID ||
-      process.env.KOYEB_SERVICE_ID ||
-      process.env.RAILWAY_ENVIRONMENT ||
-      process.env.FLY_APP_NAME,
+    process.env.KOYEB_APP_ID ||
+    process.env.KOYEB_SERVICE_ID ||
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.FLY_APP_NAME,
   );
 }
 

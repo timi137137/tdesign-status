@@ -1,11 +1,10 @@
 <template>
-  <t-breadcrumb :max-item-width="'150'" class="tdesign-breadcrumb">
+  <t-breadcrumb max-item-width="150" class="tdesign-breadcrumb">
     <t-breadcrumbItem v-for="item in crumbs" :key="item.to" :to="item.to">
       {{ item.title }}
     </t-breadcrumbItem>
   </t-breadcrumb>
 </template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';

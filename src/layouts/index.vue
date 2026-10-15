@@ -11,7 +11,7 @@
     </template>
 
     <template v-else>
-      <t-layout :key="'no-side-' + contentViewKey">
+      <t-layout :key="`no-side-${contentViewKey}`">
         <t-header><layout-header /> </t-header>
         <t-layout :class="mainLayoutCls">
           <layout-side-nav />
@@ -22,7 +22,6 @@
     <setting-com />
   </div>
 </template>
-
 <script setup lang="ts">
 import '@/style/layout.less';
 import 'tdesign-vue-next/es/message/style/css.mjs';
@@ -75,5 +74,4 @@ watch(
   },
 );
 </script>
-
 <style lang="less" scoped></style>

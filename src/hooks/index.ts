@@ -1,9 +1,10 @@
-import { onUnmounted, Ref, ref } from 'vue';
+import type { Ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 
 /**
  * counter utils
  * @param duration
- * @returns
+ * @returns 剩余秒数与启动倒计时的函数
  */
 export const useCounter = (duration = 60): [Ref<number>, () => void] => {
   let intervalTimer: ReturnType<typeof setInterval>;

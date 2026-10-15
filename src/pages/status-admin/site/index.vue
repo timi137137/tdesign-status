@@ -83,20 +83,16 @@
     </t-card>
   </main>
 </template>
-
-<script lang="ts">
-export default {
-  name: 'StatusSite',
-};
-</script>
-
 <script setup lang="ts">
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, defineOptions, onMounted, reactive, ref } from 'vue';
 
-import { adminApi, type AdminSiteConfigValue } from '@/api/admin';
+import type { AdminSiteConfigValue } from '@/api/admin';
+import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/http';
 import { useUserStore } from '@/store';
+
+defineOptions({ name: 'StatusSite' });
 
 const emptyConfig = (): AdminSiteConfigValue => ({
   siteName: '',
@@ -208,7 +204,6 @@ onMounted(() => {
   loadConfig();
 });
 </script>
-
 <style lang="less" scoped>
 .site-admin {
   display: grid;

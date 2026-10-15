@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
 import type { AppDatabase } from '../../db/client';
 import { maintenances, maintenanceUpdates } from '../../db/schema';
-import { MAINTENANCE_STATUSES, PUBLISH_STATES } from '../../domain';
+import { canTransitionMaintenanceStatus, MAINTENANCE_STATUSES, PUBLISH_STATES } from '../../domain';
 import { softDeleteEntityServices, syncEntityServices } from '../../services/entities';
 import { materializeMaintenance } from '../../services/snapshot';
 import { badRequest, conflict, notFound, ok } from '../../utils/api';
@@ -27,6 +28,7 @@ import {
   actorId,
   ADMIN_READ_ROLES,
   auditAndRebuild,
+  auditAndRebuildNow,
   CONTENT_WRITE_ROLES,
   entityIdsForService,
   maintenanceView,
@@ -41,27 +43,38 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
     const status = optionalEnumValue(query, 'status', MAINTENANCE_STATUSES);
     const publishState = optionalEnumValue(query, 'publishState', PUBLISH_STATES);
     const serviceId = optionalString(query, 'serviceId', 64);
-    const relatedIds = serviceId ? entityIdsForService(app, 'maintenance', serviceId) : null;
+    const relatedIds = serviceId ? [...entityIdsForService(app, 'maintenance', serviceId)] : null;
+
+    const conditions: SQL[] = [isNull(maintenances.deletedAt)];
+    if (search) conditions.push(like(sql`lower(${maintenances.title})`, `%${search}%`));
+    if (status) conditions.push(eq(maintenances.status, status));
+    if (publishState) conditions.push(eq(maintenances.publishState, publishState));
+    if (relatedIds) {
+      if (relatedIds.length === 0) {
+        return ok(reply, {
+          items: [],
+          pagination: { page: page.page, pageSize: page.pageSize, total: 0, totalPages: 0 },
+        });
+      }
+      conditions.push(inArray(maintenances.id, relatedIds));
+    }
+    const where = and(...conditions);
+    const total = app.db.select({ value: count() }).from(maintenances).where(where).get()?.value ?? 0;
     const rows = app.db
       .select()
       .from(maintenances)
-      .where(isNull(maintenances.deletedAt))
+      .where(where)
       .orderBy(desc(maintenances.scheduledStart))
-      .all()
-      .filter((row) => {
-        if (search && !row.title.toLocaleLowerCase('zh-CN').includes(search)) return false;
-        if (status && row.status !== status) return false;
-        if (publishState && row.publishState !== publishState) return false;
-        if (relatedIds && !relatedIds.has(row.id)) return false;
-        return true;
-      });
+      .limit(page.pageSize)
+      .offset(page.offset)
+      .all();
     return ok(reply, {
-      items: rows.slice(page.offset, page.offset + page.pageSize).map((row) => maintenanceView(app, row)),
+      items: rows.map((row) => maintenanceView(app, row)),
       pagination: {
         page: page.page,
         pageSize: page.pageSize,
-        total: rows.length,
-        totalPages: Math.ceil(rows.length / page.pageSize),
+        total,
+        totalPages: Math.ceil(total / page.pageSize),
       },
     });
   });
@@ -152,12 +165,15 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
       if (!current) return notFound('维护不存在');
       const now = Date.now();
       const nextStatus = optionalEnumValue(body, 'status', MAINTENANCE_STATUSES) ?? current.status;
+      if (!canTransitionMaintenanceStatus(current.status, nextStatus)) {
+        return badRequest(`不允许从 ${current.status} 变更为 ${nextStatus}`);
+      }
       const nextProgress =
         optionalInteger(body, 'progress', 0, 100) ?? (nextStatus === 'completed' ? 100 : current.progress);
       const next = {
         title: body.title === undefined ? current.title : requiredString(body, 'title', 200),
         description:
-          body.description === undefined ? current.description : optionalString(body, 'description', 5000) ?? null,
+          body.description === undefined ? current.description : (optionalString(body, 'description', 5000) ?? null),
         status: nextStatus,
         scheduledStart: optionalInteger(body, 'scheduledStart', 0) ?? current.scheduledStart,
         scheduledEnd: optionalInteger(body, 'scheduledEnd', 0) ?? current.scheduledEnd,
@@ -182,7 +198,7 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
             and(eq(maintenances.id, current.id), eq(maintenances.version, version), isNull(maintenances.deletedAt)),
           )
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         if (affectedServiceIds) {
           syncEntityServices(
             tx as unknown as AppDatabase,
@@ -219,6 +235,9 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
         .get();
       if (!current) return notFound('维护不存在');
       const status = enumValue(body, 'status', MAINTENANCE_STATUSES);
+      if (!canTransitionMaintenanceStatus(current.status, status)) {
+        return badRequest(`不允许从 ${current.status} 变更为 ${status}`);
+      }
       const progress = optionalInteger(body, 'progress', 0, 100) ?? (status === 'completed' ? 100 : current.progress);
       const now = Date.now();
       const updateId = randomUUID();
@@ -236,7 +255,7 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
             and(eq(maintenances.id, current.id), eq(maintenances.version, version), isNull(maintenances.deletedAt)),
           )
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         tx.insert(maintenanceUpdates)
           .values({
             id: updateId,
@@ -310,9 +329,9 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
             and(eq(maintenances.id, current.id), eq(maintenances.version, version), isNull(maintenances.deletedAt)),
           )
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
       });
-      auditAndRebuild(app, request, {
+      auditAndRebuildNow(app, request, {
         action: 'maintenance.published',
         entityType: 'maintenance',
         entityId: current.id,
@@ -353,7 +372,7 @@ export async function registerMaintenanceRoutes(app: FastifyInstance): Promise<v
             and(eq(maintenances.id, current.id), eq(maintenances.version, version), isNull(maintenances.deletedAt)),
           )
           .run();
-        if (result.changes === 0) return conflict();
+        if (result.changes === 0) conflict();
         tx.update(maintenanceUpdates)
           .set({
             deletedAt: now,

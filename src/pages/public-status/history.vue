@@ -27,18 +27,17 @@
     />
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicHistory',
 };
 </script>
-
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { type HistoryEntry, publicStatusApi } from '@/api/status';
+import type { HistoryEntry } from '@/api/status';
+import { publicStatusApi } from '@/api/status';
 import { HISTORY_PAGE_BATCH_SIZE } from '@/constants/status';
 import { useStatusStore } from '@/store';
 
@@ -105,7 +104,6 @@ onMounted(() => {
   loadMore();
 });
 </script>
-
 <style lang="less" scoped>
 .public-history {
   margin-bottom: 16px;

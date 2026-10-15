@@ -236,31 +236,25 @@
     </template>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusIncidentDetail',
 };
 </script>
-
 <script setup lang="ts">
+import { INCIDENT_STATUS_TRANSITIONS } from '@shared/public-contract';
 import dayjs from 'dayjs';
-import { MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
-import { type AdminIncident, type AdminService, adminStatusApi } from '@/api/admin-status';
+import type { AdminIncident, AdminService } from '@/api/admin-status';
+import { adminStatusApi } from '@/api/admin-status';
 import { ApiError } from '@/api/http';
 import { INCIDENT_IMPACT_LABEL, INCIDENT_IMPACT_THEME, INCIDENT_STATUS_LABEL } from '@/constants/status';
 import { useUserStore } from '@/store/modules/user';
 import type { IncidentImpact, IncidentStatus } from '@/types/status';
-
-const INCIDENT_TRANSITIONS: Record<IncidentStatus, IncidentStatus[]> = {
-  investigating: ['investigating', 'identified', 'monitoring', 'resolved'],
-  identified: ['identified', 'monitoring', 'resolved'],
-  monitoring: ['monitoring', 'investigating', 'resolved'],
-  resolved: ['resolved'],
-};
 
 const route = useRoute();
 const router = useRouter();
@@ -316,7 +310,7 @@ const serviceOptions = computed(() => services.value.map((service) => ({ label: 
 const serviceNameMap = computed(() => new Map(services.value.map((service) => [service.id, service.name])));
 const transitionOptions = computed(() => {
   const current = incident.value?.status ?? 'investigating';
-  return INCIDENT_TRANSITIONS[current].map((value) => ({
+  return INCIDENT_STATUS_TRANSITIONS[current].map((value) => ({
     label: INCIDENT_STATUS_LABEL[value],
     value,
   }));
@@ -432,7 +426,7 @@ const saveMetadata = async (context: SubmitContext) => {
 
 const appendUpdate = async (context: SubmitContext) => {
   if (context.validateResult !== true || !incident.value || writeDisabled.value) return;
-  if (!INCIDENT_TRANSITIONS[incident.value.status].includes(updateForm.status)) {
+  if (!INCIDENT_STATUS_TRANSITIONS[incident.value.status].includes(updateForm.status)) {
     MessagePlugin.error('所选状态转换不合法，请重新选择。');
     return;
   }
@@ -535,7 +529,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', beforeUnload);
 });
 </script>
-
 <style lang="less" scoped>
 .incident-detail {
   display: grid;

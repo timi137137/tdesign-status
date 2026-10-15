@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
 import { services, serviceSamples } from '../../db/schema';
-import { SERVICE_STATUSES } from '../../domain';
+import { heartbeatValueForStatus, SERVICE_STATUSES } from '../../domain';
 import { badRequest, conflict, notFound, ok } from '../../utils/api';
 import {
   enumValue,
@@ -62,14 +62,14 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
     const body = objectBody(request.body);
     const now = Date.now();
     const actor = actorId(request);
-    const maxPosition =
-      app.db
-        .select({ position: services.position })
-        .from(services)
-        .where(isNull(services.deletedAt))
-        .orderBy(sql`${services.position} DESC`)
-        .limit(1)
-        .get()?.position ?? -1;
+    const lastPositionRow = app.db
+      .select({ position: services.position })
+      .from(services)
+      .where(isNull(services.deletedAt))
+      .orderBy(sql`${services.position} DESC`)
+      .limit(1)
+      .get();
+    const maxPosition = lastPositionRow?.position ?? -1;
     const row = {
       id: randomUUID(),
       slug: normalizeSlug(requiredString(body, 'slug', 80)),
@@ -94,8 +94,7 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
         serviceId: row.id,
         observedAt: now,
         status: row.status,
-        heartbeatValue:
-          row.status === 'down' ? 0 : row.status === 'maintenance' ? 2 : row.status === 'degraded' ? 3 : 1,
+        heartbeatValue: heartbeatValueForStatus(row.status),
         latencyMs: row.latencyMs,
         uptime: row.uptime,
         createdAt: now,
@@ -132,7 +131,7 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
         slug: body.slug === undefined ? current.slug : normalizeSlug(requiredString(body, 'slug', 80)),
         name: body.name === undefined ? current.name : requiredString(body, 'name', 100),
         description:
-          body.description === undefined ? current.description : optionalString(body, 'description', 2000) ?? null,
+          body.description === undefined ? current.description : (optionalString(body, 'description', 2000) ?? null),
         status: optionalEnumValue(body, 'status', SERVICE_STATUSES) ?? current.status,
         enabled: optionalBoolean(body, 'enabled') ?? current.enabled,
         position: optionalInteger(body, 'position', 0) ?? current.position,
@@ -159,8 +158,7 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
             serviceId: current.id,
             observedAt: now,
             status: next.status,
-            heartbeatValue:
-              next.status === 'down' ? 0 : next.status === 'maintenance' ? 2 : next.status === 'degraded' ? 3 : 1,
+            heartbeatValue: heartbeatValueForStatus(next.status),
             latencyMs: next.latencyMs,
             uptime: next.uptime,
             createdAt: now,
@@ -257,7 +255,7 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
             })
             .where(and(eq(services.id, item.id), eq(services.version, item.version), isNull(services.deletedAt)))
             .run();
-          if (result.changes === 0) return conflict();
+          if (result.changes === 0) conflict();
         }
       });
       const after = app.db

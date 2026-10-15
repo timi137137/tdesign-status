@@ -45,7 +45,6 @@
     </t-badge>
   </t-popup>
 </template>
-
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { onMounted } from 'vue';
@@ -83,7 +82,6 @@ const goDetail = () => {
   router.push(userStore.permissions.includes('audit:read') ? '/system/audit' : '/dashboard/overview');
 };
 </script>
-
 <style lang="less" scoped>
 .header-msg {
   width: 400px;

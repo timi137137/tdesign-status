@@ -5,26 +5,24 @@ import { requireRoles } from '../../auth/guards';
 import { siteConfigs } from '../../db/schema';
 import type { SiteConfigValue } from '../../domain';
 import { writeAudit } from '../../services/audit';
-import { badRequest, conflict, notFound, ok } from '../../utils/api';
-import { expectedVersion, objectBody, optionalString, requiredString, versionEtag } from '../../utils/validation';
-import { actorId, ADMIN_READ_ROLES, auditAndRebuild, CONTENT_WRITE_ROLES } from './helpers';
+import { conflict, notFound, ok } from '../../utils/api';
+import {
+  expectedVersion,
+  objectBody,
+  optionalAbsoluteUrl,
+  optionalString,
+  requiredString,
+  versionEtag,
+} from '../../utils/validation';
+import { actorId, ADMIN_READ_ROLES, auditAndRebuildNow, CONTENT_WRITE_ROLES } from './helpers';
 
 function parseConfig(body: Record<string, unknown>): SiteConfigValue {
   const raw =
     body.config && typeof body.config === 'object' && !Array.isArray(body.config)
       ? (body.config as Record<string, unknown>)
       : body;
-  const logoUrl = optionalString(raw, 'logoUrl', 2000) ?? '';
-  const supportUrl = optionalString(raw, 'supportUrl', 2000) ?? '';
-  for (const value of [logoUrl, supportUrl]) {
-    if (value) {
-      try {
-        new URL(value);
-      } catch {
-        return badRequest('logoUrl/supportUrl 必须是绝对 URL');
-      }
-    }
-  }
+  const logoUrl = optionalAbsoluteUrl(raw, 'logoUrl', 2000);
+  const supportUrl = optionalAbsoluteUrl(raw, 'supportUrl', 2000);
   return {
     siteName: requiredString(raw, 'siteName', 100),
     title: requiredString(raw, 'title', 200),
@@ -118,7 +116,7 @@ export async function registerSiteConfigRoutes(app: FastifyInstance): Promise<vo
         .where(and(eq(siteConfigs.id, 'default'), eq(siteConfigs.version, version), isNull(siteConfigs.deletedAt)))
         .run();
       if (result.changes === 0) return conflict();
-      auditAndRebuild(app, request, {
+      auditAndRebuildNow(app, request, {
         action: 'site_config.published',
         entityType: 'site_config',
         entityId: 'default',

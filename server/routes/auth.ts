@@ -12,7 +12,6 @@ import {
 } from '../auth/session';
 import { users } from '../db/schema';
 import { writeAudit } from '../services/audit';
-import { rebuildPublicSnapshot } from '../services/snapshot';
 import { ApiError, conflict, ok, unauthorized } from '../utils/api';
 import { expectedVersion, normalizeUsername, objectBody, requiredString, versionEtag } from '../utils/validation';
 
@@ -72,10 +71,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return unauthorized('用户名或密码错误');
       }
 
-      const valid = await verifyPassword(password, user.passwordHash);
       if (user.lockedUntil && user.lockedUntil > now) {
+        await burnPasswordVerification(password);
         throw new ApiError(429, 'LOGIN_LOCKED', '登录失败次数过多，请稍后重试');
       }
+
+      const valid = await verifyPassword(password, user.passwordHash);
       if (!valid) {
         const failedLoginCount = user.failedLoginCount + 1;
         const lockedUntil = failedLoginCount >= MAX_FAILED_LOGINS ? now + ACCOUNT_LOCK_MS : null;
@@ -206,7 +207,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       after: { mustChangePassword: false, version: version + 1 },
       metadata: { revokedSessions },
     });
-    rebuildPublicSnapshot(app.db, user.id);
     reply.header('ETag', versionEtag(version + 1));
     return ok(
       reply,

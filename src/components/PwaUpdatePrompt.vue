@@ -5,7 +5,6 @@
     <button type="button" aria-label="关闭提示" @click="close">关闭</button>
   </div>
 </template>
-
 <script setup lang="ts">
 import { useRegisterSW } from 'virtual:pwa-register/vue';
 
@@ -16,7 +15,6 @@ const close = () => {
   offlineReady.value = false;
 };
 </script>
-
 <style lang="less" scoped>
 .pwa-prompt {
   position: fixed;

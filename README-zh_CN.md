@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/badge/node-%3E%3D20.19%20%3C25-brightgreen" alt="node compatibility"></a>
+  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen" alt="node compatibility"></a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
@@ -33,7 +33,7 @@
 
 ### 环境要求
 
-- Node.js `>=20.19.0 <25`（ESLint 10 等工具链更偏好 20.19+、22.13+ 或 24+）
+- Node.js `>=24`（`node:24` 镜像、`nodejs_24` Nix 包与 Render 的 `yarn` 构建均以此为准）
 - 构建需能编译 `better-sqlite3`（本机需 Python + C++ 工具链）
 
 ### 快速开始
@@ -42,15 +42,27 @@
 cp .env.example .env
 # 填写 STATUS_ADMIN_USERNAME / STATUS_ADMIN_PASSWORD
 
-npm install
+npm ci
 npm run db:migrate
 npm run db:seed
 npm run dev
 ```
 
+`yarn install --frozen-lockfile` 等价可用；仓库同时提交 `package-lock.json` 与 `yarn.lock`（Render 走 yarn）。
+
 - 应用 / API（开发）：`http://127.0.0.1:3000`（以 `.env` 为准）
 - Vite 前端（开发）：通常 `http://127.0.0.1:3002`
 - 就绪接口：`GET /api/health/live`
+
+### 本地检查
+
+```bash
+npm run lint        # eslint + prettier + vue 规则（有 warning 即失败）
+npm run stylelint
+npm run typecheck   # src 用 vue-tsc，server 用 tsc
+npm run test
+npm run build       # vue-tsc + vite 生产构建
+```
 
 ### 部署
 

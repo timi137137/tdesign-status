@@ -1,11 +1,11 @@
 import type { CursorPage, Incident, Maintenance, StatusSnapshot } from '@/types/status';
-import { mapPublicSnapshot, type PublicSnapshotPayload } from '@/utils/public-snapshot';
+import type { PublicSnapshotPayload } from '@/utils/public-snapshot';
+import { mapPublicSnapshot } from '@/utils/public-snapshot';
 
 import { apiFetch } from './http';
 
 export type HistoryEntry =
-  | { type: 'incident'; at: number; incident: Incident }
-  | { type: 'maintenance'; at: number; maintenance: Maintenance };
+  { type: 'incident'; at: number; incident: Incident } | { type: 'maintenance'; at: number; maintenance: Maintenance };
 
 const queryString = (params: Record<string, string | number | undefined>) => {
   const query = new URLSearchParams();

@@ -6,7 +6,6 @@
     </div>
   </result>
 </template>
-
 <script lang="ts">
 export default {
   name: 'ResultNetworkError',

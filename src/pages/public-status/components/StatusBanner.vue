@@ -7,13 +7,11 @@
     <component :is="iconComponent" class="status-banner__icon" aria-hidden="true" />
   </section>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusBanner',
 };
 </script>
-
 <script setup lang="ts">
 import { CheckCircleIcon, ErrorCircleIcon } from 'tdesign-icons-vue-next';
 import { computed } from 'vue';
@@ -27,7 +25,6 @@ const props = defineProps<{
 /** 本机打包图标 */
 const iconComponent = computed(() => (props.summary.status === 'up' ? CheckCircleIcon : ErrorCircleIcon));
 </script>
-
 <style lang="less" scoped>
 .status-banner {
   display: flex;

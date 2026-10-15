@@ -9,8 +9,8 @@
       <button
         type="button"
         class="public-header__link"
-        :class="{ 'public-header__link--active': modelValue === 'current' }"
-        :aria-current="modelValue === 'current' ? 'page' : undefined"
+        :class="{ 'public-header__link--active': model === 'current' }"
+        :aria-current="model === 'current' ? 'page' : undefined"
         @click="onChange('current')"
       >
         {{ navCurrent }}
@@ -18,8 +18,8 @@
       <button
         type="button"
         class="public-header__link"
-        :class="{ 'public-header__link--active': modelValue === 'history' }"
-        :aria-current="modelValue === 'history' ? 'page' : undefined"
+        :class="{ 'public-header__link--active': model === 'history' }"
+        :aria-current="model === 'history' ? 'page' : undefined"
         @click="onChange('history')"
       >
         {{ navHistory }}
@@ -27,19 +27,16 @@
     </nav>
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicHeader',
 };
 </script>
-
 <script setup lang="ts">
 import LogoFull from '@/assets/assets-logo-full.svg?component';
 
 withDefaults(
   defineProps<{
-    modelValue: string;
     siteTitle?: string;
     navCurrent?: string;
     navHistory?: string;
@@ -54,12 +51,13 @@ withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
   (e: 'change', value: string): void;
 }>();
 
+const model = defineModel<string>({ default: 'current' });
+
 const onChange = (value: string) => {
-  emit('update:modelValue', value);
+  model.value = value;
   emit('change', value);
 };
 
@@ -67,7 +65,6 @@ const onLogoClick = () => {
   onChange('current');
 };
 </script>
-
 <style lang="less" scoped>
 .public-header {
   display: flex;

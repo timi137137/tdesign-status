@@ -1,7 +1,7 @@
 import type { TabValue } from 'tdesign-vue-next';
-import { LocationQueryRaw, RouteRecordName } from 'vue-router';
+import type { LocationQueryRaw, RouteRecordName } from 'vue-router';
 
-import STYLE_CONFIG from '@/config/style';
+import type STYLE_CONFIG from '@/config/style';
 import type { Permission, UserRole } from '@/types/auth';
 
 export interface MenuRoute {
@@ -24,9 +24,9 @@ export type SettingType = typeof STYLE_CONFIG;
 
 export type ClassName = { [className: string]: any } | ClassName[] | string;
 
-export type CommonObjType = {
+export interface CommonObjType {
   [key: string]: string | number;
-};
+}
 
 export interface UserInfo {
   id: string;

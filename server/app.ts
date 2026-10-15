@@ -3,9 +3,11 @@ import path from 'node:path';
 
 import staticPlugin from '@fastify/static';
 import { and, count, eq, isNull } from 'drizzle-orm';
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 
-import { loadConfig, type ServerConfig } from './config';
+import type { ServerConfig } from './config';
+import { loadConfig } from './config';
 import { openDatabase } from './db/client';
 import { applyMigrations } from './db/migrate';
 import { publicSnapshots, users } from './db/schema';
@@ -14,7 +16,11 @@ import { registerSecurity } from './plugins/security';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerPublicRoutes } from './routes/public';
+import { runRetentionSweep } from './services/retention';
+import { createSnapshotScheduler } from './services/snapshot-scheduler';
 import { ApiError, ok } from './utils/api';
+
+const RETENTION_SWEEP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 function apiErrorPayload(code: string, message: string, data: unknown = null) {
   return { code, data, message };
@@ -61,7 +67,26 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
   app.decorate('appConfig', config);
   app.decorate('db', database.db);
 
+  const snapshotScheduler = createSnapshotScheduler(app);
+  app.decorate('snapshotScheduler', snapshotScheduler);
+
+  try {
+    runRetentionSweep(database.db);
+  } catch (error) {
+    app.log.error({ err: error }, 'retention sweep failed');
+  }
+  const retentionTimer = setInterval(() => {
+    try {
+      runRetentionSweep(database.db);
+    } catch (error) {
+      app.log.error({ err: error }, 'retention sweep failed');
+    }
+  }, RETENTION_SWEEP_INTERVAL_MS);
+  retentionTimer.unref();
+
   app.addHook('onClose', async () => {
+    clearInterval(retentionTimer);
+    snapshotScheduler.flush();
     database.close();
   });
 
@@ -96,22 +121,22 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
   await registerPublicRoutes(app);
   await registerAdminRoutes(app);
 
-  app.get('/api/health/live', async (_request, reply) =>
-    ok(reply, {
+  app.get('/api/health/live', async (_request, reply) => {
+    return ok(reply, {
       status: 'ok',
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: Date.now(),
-    }),
-  );
+    });
+  });
 
   app.get('/api/health/ready', async (_request, reply) => {
     database.sqlite.prepare('SELECT 1').get();
-    const userCount =
-      app.db
-        .select({ value: count() })
-        .from(users)
-        .where(and(eq(users.isActive, true), isNull(users.deletedAt)))
-        .get()?.value ?? 0;
+    const userCountRow = app.db
+      .select({ value: count() })
+      .from(users)
+      .where(and(eq(users.isActive, true), isNull(users.deletedAt)))
+      .get();
+    const userCount = userCountRow?.value ?? 0;
     const snapshot = app.db
       .select({ id: publicSnapshots.id, lastModified: publicSnapshots.lastModified })
       .from(publicSnapshots)
@@ -132,12 +157,12 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
     );
   });
 
-  app.get('/api/health', async (_request, reply) =>
-    ok(reply, {
+  app.get('/api/health', async (_request, reply) => {
+    return ok(reply, {
       status: 'ok',
       timestamp: Date.now(),
-    }),
-  );
+    });
+  });
 
   const hasStaticSite = existsSync(config.distPath);
   if (hasStaticSite) {

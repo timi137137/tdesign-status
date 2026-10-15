@@ -3,7 +3,6 @@
     <t-button theme="primary" @click="() => $router.push('/')">返回首页</t-button>
   </result>
 </template>
-
 <script lang="ts">
 export default {
   name: 'ResultMaintenance',

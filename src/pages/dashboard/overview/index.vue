@@ -122,19 +122,18 @@
     </section>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'DashboardOverview',
 };
 </script>
-
 <script setup lang="ts">
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { adminApi, type DashboardLayoutConfig, type DashboardOverview, type DashboardWidgetId } from '@/api/admin';
+import type { DashboardLayoutConfig, DashboardOverview, DashboardWidgetId } from '@/api/admin';
+import { adminApi } from '@/api/admin';
 import { INCIDENT_STATUS_LABEL, MAINTENANCE_STATUS_LABEL, SERVICE_STATUS_LABEL } from '@/constants/status';
 import { useUserStore } from '@/store';
 import { formatStatusTime } from '@/utils/status-date';
@@ -243,7 +242,6 @@ onMounted(() => {
   loadAll();
 });
 </script>
-
 <style lang="less" scoped>
 .overview {
   display: grid;

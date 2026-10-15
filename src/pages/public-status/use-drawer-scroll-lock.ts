@@ -1,4 +1,5 @@
-import { onUnmounted, type Ref, watch } from 'vue';
+import type { Ref } from 'vue';
+import { onUnmounted, watch } from 'vue';
 
 const SCROLL_LOCK_CLASS = 'public-status-drawer-lock';
 const OVERLAY_BODY_SELECTOR = '.public-event-drawer .t-drawer__body, .public-event-dialog .t-dialog__body';

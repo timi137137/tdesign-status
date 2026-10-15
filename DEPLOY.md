@@ -21,6 +21,8 @@
 3. 填写 `STATUS_ADMIN_USERNAME` / `STATUS_ADMIN_PASSWORD`。
 4. 打开 `https://<service>.onrender.com`；健康检查 `GET /api/health/live`。
 
+构建命令为 `yarn install --frozen-lockfile && yarn build`（用仓库内的 `yarn.lock`），Node 版本按 `package.json` 的 `engines`（`>=24`）。
+
 Free 无持久盘；`STATUS_AUTO_SEED=true` 时空库会自动 seed。空闲约 15 分钟休眠。
 
 ## Koyeb / Railway（Dockerfile）

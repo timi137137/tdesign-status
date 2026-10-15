@@ -27,7 +27,6 @@ export default {
 import Result from '@/components/result/index.vue';
 import Thumbnail from '@/components/thumbnail/index.vue';
 </script>
-
 <style lang="less" scoped>
 .result-slot-container {
   position: relative;

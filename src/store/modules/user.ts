@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 
-import { authApi, type LoginPayload } from '@/api/auth';
+import type { LoginPayload } from '@/api/auth';
+import { authApi } from '@/api/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import type { UserInfo } from '@/types/interface';
 

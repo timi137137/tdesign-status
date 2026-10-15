@@ -62,7 +62,6 @@
     </t-head-menu>
   </div>
 </template>
-
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import { computed } from 'vue';
@@ -287,7 +286,6 @@ const navToHelper = () => {
   }
 }
 </style>
-
 <!-- eslint-disable-next-line vue-scoped-css/enforce-style-type -->
 <style lang="less">
 .operations-dropdown-container-item {

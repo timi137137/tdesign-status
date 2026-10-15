@@ -1,14 +1,23 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, count, eq, isNull } from 'drizzle-orm';
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
-import { entityServices, type IncidentRow, type MaintenanceRow } from '../../db/schema';
+import type { IncidentRow, MaintenanceRow } from '../../db/schema';
+import { entityServices } from '../../db/schema';
 import type { EntityType, UserRole } from '../../domain';
-import { type AuditInput, writeAudit } from '../../services/audit';
-import { materializeIncident, materializeMaintenance, rebuildPublicSnapshot } from '../../services/snapshot';
+import type { AuditInput } from '../../services/audit';
+import { writeAudit } from '../../services/audit';
+import { materializeIncident, materializeMaintenance } from '../../services/snapshot';
 import { unauthorized } from '../../utils/api';
 
 export const ADMIN_READ_ROLES: UserRole[] = ['administrator', 'publisher', 'viewer'];
 export const CONTENT_WRITE_ROLES: UserRole[] = ['administrator', 'publisher'];
+
+export function countRows(app: FastifyInstance, table: SQLiteTable, where?: SQL): number {
+  const rows = app.db.select({ value: count() }).from(table);
+  return (where ? rows.where(where) : rows).get()?.value ?? 0;
+}
 
 export function actorId(request: FastifyRequest): string {
   if (!request.principal) return unauthorized();
@@ -62,5 +71,14 @@ export function maintenanceView(app: FastifyInstance, row: MaintenanceRow) {
 
 export function auditAndRebuild(app: FastifyInstance, request: FastifyRequest, input: AuditInput): void {
   writeAudit(app.db, request, input);
-  rebuildPublicSnapshot(app.db, actorId(request));
+  app.snapshotScheduler.schedule(actorId(request));
+}
+
+/**
+ * Audits and rebuilds the public snapshot before the response is sent. Used by
+ * publish actions, where the public page must reflect the new content at once.
+ */
+export function auditAndRebuildNow(app: FastifyInstance, request: FastifyRequest, input: AuditInput): void {
+  writeAudit(app.db, request, input);
+  app.snapshotScheduler.rebuildNow(actorId(request));
 }

@@ -8,6 +8,7 @@ import { loadPrincipal, readSessionToken } from '../auth/session';
 import { ApiError } from '../utils/api';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const UNAUTHENTICATED_API_PREFIXES = ['/api/public/', '/api/health'];
 
 function requestOrigin(request: FastifyRequest): string | null {
   const { host } = request.headers;
@@ -91,6 +92,7 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
   app.addHook('onRequest', async (request) => {
     validateOrigin(app, request);
     if (!request.url.startsWith('/api/')) return;
+    if (UNAUTHENTICATED_API_PREFIXES.some((prefix) => request.url.startsWith(prefix))) return;
     const token = readSessionToken(request, app.appConfig);
     request.principal = token ? loadPrincipal(app.db, token) : null;
   });

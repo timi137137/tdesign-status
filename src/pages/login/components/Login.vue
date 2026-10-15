@@ -1,13 +1,14 @@
 <template>
   <t-form
     ref="form"
-    :class="['item-container', `login-${type}`]"
+    class="item-container"
+    :class="[`login-${type}`]"
     :data="formData"
     :rules="formRules"
     label-width="0"
     @submit="onSubmit"
   >
-    <template v-if="type == 'password'">
+    <template v-if="type === 'password'">
       <t-form-item name="account">
         <t-input v-model="formData.account" size="large" placeholder="请输入账号：admin">
           <template #prefix-icon>
@@ -40,7 +41,7 @@
     </template>
 
     <!-- 扫码登陆 -->
-    <template v-else-if="type == 'qrcode'">
+    <template v-else-if="type === 'qrcode'">
       <div class="tip-container">
         <span class="tip">请使用微信扫一扫登录</span>
         <span class="refresh">刷新 <t-icon name="refresh" /> </span>
@@ -61,7 +62,7 @@
       <t-form-item class="verification-code" name="verifyCode">
         <t-input v-model="formData.verifyCode" size="large" placeholder="请输入验证码" />
         <t-button size="large" variant="outline" :disabled="countDown > 0" @click="sendCode">
-          {{ countDown == 0 ? '发送验证码' : `${countDown}秒后可重发` }}
+          {{ countDown === 0 ? '发送验证码' : `${countDown}秒后可重发` }}
         </t-button>
       </t-form-item>
     </template>
@@ -77,7 +78,6 @@
     </div>
   </t-form>
 </template>
-
 <script setup lang="ts">
 import QrcodeVue from 'qrcode.vue';
 import type { FormInstanceFunctions, FormRule, SubmitContext } from 'tdesign-vue-next';
@@ -165,7 +165,6 @@ const onSubmit = async (ctx: SubmitContext) => {
   }
 };
 </script>
-
 <style lang="less" scoped>
 @import '../index.less';
 </style>

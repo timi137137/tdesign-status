@@ -276,30 +276,25 @@
     </template>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusMaintenanceDetail',
 };
 </script>
-
 <script setup lang="ts">
+import { MAINTENANCE_STATUS_TRANSITIONS } from '@shared/public-contract';
 import dayjs from 'dayjs';
-import { MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
-import { type AdminMaintenance, type AdminService, adminStatusApi } from '@/api/admin-status';
+import type { AdminMaintenance, AdminService } from '@/api/admin-status';
+import { adminStatusApi } from '@/api/admin-status';
 import { ApiError } from '@/api/http';
 import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_STATUS_THEME } from '@/constants/status';
 import { useUserStore } from '@/store/modules/user';
 import type { MaintenanceStatus } from '@/types/status';
-
-const MAINTENANCE_TRANSITIONS: Record<MaintenanceStatus, MaintenanceStatus[]> = {
-  scheduled: ['scheduled', 'in_progress', 'completed'],
-  in_progress: ['in_progress', 'completed'],
-  completed: ['completed'],
-};
 
 const route = useRoute();
 const router = useRouter();
@@ -355,7 +350,7 @@ const serviceOptions = computed(() => services.value.map((service) => ({ label: 
 const serviceNameMap = computed(() => new Map(services.value.map((service) => [service.id, service.name])));
 const transitionOptions = computed(() => {
   const current = maintenance.value?.status ?? 'scheduled';
-  return MAINTENANCE_TRANSITIONS[current].map((value) => ({
+  return MAINTENANCE_STATUS_TRANSITIONS[current].map((value) => ({
     label: MAINTENANCE_STATUS_LABEL[value],
     value,
   }));
@@ -525,7 +520,7 @@ const validateProgress = () => {
 
 const appendUpdate = async (context: SubmitContext) => {
   if (context.validateResult !== true || !maintenance.value || writeDisabled.value) return;
-  if (!MAINTENANCE_TRANSITIONS[maintenance.value.status].includes(updateForm.status)) {
+  if (!MAINTENANCE_STATUS_TRANSITIONS[maintenance.value.status].includes(updateForm.status)) {
     updateValidationError.value = '所选状态转换不合法，请重新选择。';
     return;
   }
@@ -632,7 +627,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', beforeUnload);
 });
 </script>
-
 <style lang="less" scoped>
 .maintenance-detail {
   display: grid;

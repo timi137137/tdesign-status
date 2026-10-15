@@ -37,13 +37,11 @@
     <event-detail v-if="showDialog && eventId" :id="eventId" :kind="kind" />
   </t-dialog>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicEventOverlay',
 };
 </script>
-
 <script setup lang="ts">
 import { computed, defineAsyncComponent, toRef } from 'vue';
 
@@ -51,8 +49,6 @@ import { PUBLIC_DETAIL_DRAWER_SIZE } from '@/constants/status';
 
 import { usePublicDrawerScrollLock } from '../use-drawer-scroll-lock';
 import { useIsMobile } from '../use-is-mobile';
-
-const EventDetail = defineAsyncComponent(() => import('../event-detail.vue'));
 
 const props = defineProps<{
   visible: boolean;
@@ -65,6 +61,8 @@ const emit = defineEmits<{
   'update:visible': [boolean];
   close: [];
 }>();
+
+const EventDetail = defineAsyncComponent(() => import('../event-detail.vue'));
 
 const isMobile = useIsMobile();
 const showDrawer = computed(() => props.visible && !isMobile.value);
@@ -84,7 +82,6 @@ const onDialogVisible = (value: boolean) => {
   if (!value) emit('close');
 };
 </script>
-
 <style lang="less" scoped>
 :global(.public-event-drawer.t-drawer--right .t-drawer__content-wrapper--right) {
   width: 480px;

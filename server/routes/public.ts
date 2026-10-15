@@ -1,11 +1,21 @@
-import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, isNull, max } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { incidents, maintenances } from '../db/schema';
+import type { PublicHistoryEntry } from '../domain';
 import { getCurrentSnapshot } from '../services/snapshot';
 import { ApiError, notFound, ok } from '../utils/api';
 import { applyPublicCache, contentEtag } from '../utils/cache';
 import { pagination } from '../utils/validation';
+
+function parseLimit(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
 
 export async function registerPublicRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/public/snapshot', async (request, reply) => {
@@ -26,85 +36,87 @@ export async function registerPublicRoutes(app: FastifyInstance): Promise<void> 
     const query = request.query && typeof request.query === 'object' ? (request.query as Record<string, unknown>) : {};
     const cursorPage =
       typeof query.cursor === 'string' && /^\d+$/.test(query.cursor) ? Number(query.cursor) : undefined;
-    const limit =
-      typeof query.limit === 'string' ? Number(query.limit) : typeof query.limit === 'number' ? query.limit : undefined;
     const page = pagination({
       page: query.page ?? cursorPage ?? 1,
-      pageSize: query.pageSize ?? limit ?? 50,
+      pageSize: query.pageSize ?? parseLimit(query.limit) ?? 50,
     });
     const requestedType = query.type === 'incident' || query.type === 'maintenance' ? query.type : 'all';
-    const incidentItems =
+
+    const incidentWhere = and(
+      eq(incidents.publishState, 'published'),
+      isNotNull(incidents.publishedJson),
+      isNull(incidents.deletedAt),
+    );
+    const maintenanceWhere = and(
+      eq(maintenances.publishState, 'published'),
+      isNotNull(maintenances.publishedJson),
+      isNull(maintenances.deletedAt),
+    );
+
+    // The merged prefix of length N is fully covered by each side's top-N rows,
+    // so both reads stay bounded by the requested page instead of the table size.
+    const windowSize = page.offset + page.pageSize;
+    const incidentRows =
       requestedType === 'maintenance'
         ? []
         : app.db
             .select({ payload: incidents.publishedJson })
             .from(incidents)
-            .where(
-              and(
-                eq(incidents.publishState, 'published'),
-                isNotNull(incidents.publishedJson),
-                isNull(incidents.deletedAt),
-              ),
-            )
+            .where(incidentWhere)
             .orderBy(desc(incidents.startedAt))
-            .all()
-            .flatMap((row) =>
-              row.payload
-                ? [
-                    {
-                      type: 'incident' as const,
-                      at: row.payload.startedAt,
-                      incident: row.payload,
-                    },
-                  ]
-                : [],
-            );
-    const maintenanceItems =
+            .limit(windowSize)
+            .all();
+    const maintenanceRows =
       requestedType === 'incident'
         ? []
         : app.db
             .select({ payload: maintenances.publishedJson })
             .from(maintenances)
-            .where(
-              and(
-                eq(maintenances.publishState, 'published'),
-                isNotNull(maintenances.publishedJson),
-                isNull(maintenances.deletedAt),
-              ),
-            )
+            .where(maintenanceWhere)
             .orderBy(desc(maintenances.scheduledStart))
-            .all()
-            .flatMap((row) =>
-              row.payload
-                ? [
-                    {
-                      type: 'maintenance' as const,
-                      at: row.payload.scheduledStart,
-                      maintenance: row.payload,
-                    },
-                  ]
-                : [],
-            );
+            .limit(windowSize)
+            .all();
+
+    const incidentStats =
+      requestedType === 'maintenance'
+        ? undefined
+        : app.db
+            .select({ total: count(), updatedAt: max(incidents.updatedAt) })
+            .from(incidents)
+            .where(incidentWhere)
+            .get();
+    const maintenanceStats =
+      requestedType === 'incident'
+        ? undefined
+        : app.db
+            .select({ total: count(), updatedAt: max(maintenances.updatedAt) })
+            .from(maintenances)
+            .where(maintenanceWhere)
+            .get();
+
+    const incidentItems = incidentRows.flatMap<PublicHistoryEntry>((row) =>
+      row.payload ? [{ type: 'incident', at: row.payload.startedAt, incident: row.payload }] : [],
+    );
+    const maintenanceItems = maintenanceRows.flatMap<PublicHistoryEntry>((row) =>
+      row.payload ? [{ type: 'maintenance', at: row.payload.scheduledStart, maintenance: row.payload }] : [],
+    );
     const allItems = [...incidentItems, ...maintenanceItems].sort((left, right) => right.at - left.at);
     const items = allItems.slice(page.offset, page.offset + page.pageSize);
-    const totalPages = Math.ceil(allItems.length / page.pageSize) || 0;
+
+    const total = (incidentStats?.total ?? 0) + (maintenanceStats?.total ?? 0);
+    const totalPages = Math.ceil(total / page.pageSize);
     const data = {
       items,
       nextCursor: page.page < totalPages ? String(page.page + 1) : null,
-      total: allItems.length,
+      total,
       pagination: {
         page: page.page,
         pageSize: page.pageSize,
-        total: allItems.length,
+        total,
         totalPages,
       },
     };
-    const lastModified =
-      allItems.reduce(
-        (latest, item) =>
-          Math.max(latest, item.type === 'incident' ? item.incident.updatedAt : item.maintenance.updatedAt),
-        0,
-      ) || Date.now();
+    const lastModified = Math.max(incidentStats?.updatedAt ?? 0, maintenanceStats?.updatedAt ?? 0) || Date.now();
     const etag = contentEtag(data);
     if (applyPublicCache(request, reply, etag, lastModified, app.appConfig.publicCacheSeconds)) {
       return reply;

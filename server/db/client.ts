@@ -2,7 +2,8 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 import Database from 'better-sqlite3';
-import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 
 import type { ServerConfig } from '../config';
 import * as schema from './schema';
@@ -12,7 +13,7 @@ export type AppDatabase = BetterSQLite3Database<typeof schema>;
 export interface DatabaseContext {
   readonly sqlite: Database.Database;
   readonly db: AppDatabase;
-  close(): void;
+  close: () => void;
 }
 
 export function openDatabase(config: ServerConfig): DatabaseContext {

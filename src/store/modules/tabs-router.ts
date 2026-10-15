@@ -50,7 +50,6 @@ export const useTabsRouterStore = defineStore('tabsRouter', {
       const needAlive = !ignoreCacheRoutes.includes(newRoute.name as string) && newRoute.meta?.keepAlive !== false;
       const existed = this.tabRouters.find((route: TRouterInfo) => route.path === newRoute.path);
       if (!existed) {
-        // eslint-disable-next-line no-param-reassign
         this.tabRouterList = this.tabRouterList.concat({ ...newRoute, isAlive: needAlive });
       } else if (!needAlive) {
         existed.isAlive = false;

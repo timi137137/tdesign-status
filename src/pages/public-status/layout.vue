@@ -30,13 +30,11 @@
     <t-footer class="public-status__footer">{{ statusStore.siteConfig.text.footerText }}</t-footer>
   </t-layout>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicStatusLayout',
 };
 </script>
-
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -134,7 +132,6 @@ onUnmounted(() => {
   void settingStore.changeMode(settingStore.mode as 'light' | 'dark' | 'auto');
 });
 </script>
-
 <style lang="less" scoped>
 :global(html),
 :global(body),

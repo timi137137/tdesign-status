@@ -6,7 +6,6 @@
     <component :is="Component" v-else :key="route.fullPath" />
   </router-view>
 </template>
-
 <script setup lang="ts">
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';

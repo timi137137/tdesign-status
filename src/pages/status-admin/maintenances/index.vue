@@ -316,20 +316,20 @@
     </t-dialog>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusMaintenances',
 };
 </script>
-
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { type AdminListQuery, type AdminMaintenance, type AdminService, adminStatusApi } from '@/api/admin-status';
+import type { AdminListQuery, AdminMaintenance, AdminService } from '@/api/admin-status';
+import { adminStatusApi } from '@/api/admin-status';
 import { ApiError } from '@/api/http';
 import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_STATUS_THEME } from '@/constants/status';
 import { useUserStore } from '@/store/modules/user';
@@ -597,7 +597,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', updateOnlineState);
 });
 </script>
-
 <style lang="less" scoped>
 .maintenance-admin {
   display: grid;

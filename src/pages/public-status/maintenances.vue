@@ -18,13 +18,11 @@
     />
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicMaintenances',
 };
 </script>
-
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -57,7 +55,6 @@ onMounted(() => {
   if (!store.fetchedAt) store.loadSnapshot();
 });
 </script>
-
 <style lang="less" scoped>
 .public-maintenances {
   margin-bottom: 16px;

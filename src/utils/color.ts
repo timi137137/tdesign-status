@@ -1,11 +1,11 @@
 import { Color } from 'tvision-color';
 
-import { TColorToken } from '@/config/color';
+import type { TColorToken } from '@/config/color';
 
-type ChartLike = {
+interface ChartLike {
   getOption: () => Record<string, unknown>;
   setOption: (option: Record<string, unknown>, notMerge?: boolean) => void;
-};
+}
 
 export function getColorFromTheme(): Array<string> {
   const theme = getComputedStyle(document.documentElement).getPropertyValue('--td-brand-color').trim() || '#0052D9';
@@ -75,7 +75,7 @@ export function insertThemeStylesheet(theme: string, colorMap: TColorToken, mode
 
   const styleSheet = document.createElement('style');
   styleSheet.type = 'text/css';
-  styleSheet.innerText = `${root}{
+  styleSheet.textContent = `${root}{
     --td-brand-color: ${colorMap['--td-brand-color']};
     --td-brand-color-1: ${colorMap['--td-brand-color-1']};
     --td-brand-color-2: ${colorMap['--td-brand-color-2']};

@@ -14,13 +14,11 @@
     <t-button theme="primary" variant="text" size="small" @click="$emit('detail', item.id)">查看详情</t-button>
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'MaintenanceRow',
 };
 </script>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 
@@ -47,7 +45,6 @@ const affectedText = computed(() => {
   return ids.map((id) => store.serviceNameMap[id] || id).join('、');
 });
 </script>
-
 <style lang="less" scoped>
 .summary-row {
   display: flex;

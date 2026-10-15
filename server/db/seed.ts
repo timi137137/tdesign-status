@@ -5,6 +5,7 @@ import { count } from 'drizzle-orm';
 import { hashPassword, validatePassword } from '../auth/password';
 import { loadConfig } from '../config';
 import type { IncidentImpact, IncidentStatus, PublicIncident, PublicMaintenance, ServiceStatus } from '../domain';
+import { heartbeatValueForStatus } from '../domain';
 import { writeAudit } from '../services/audit';
 import { DEFAULT_SITE_CONFIG, rebuildPublicSnapshot } from '../services/snapshot';
 import { normalizeUsername } from '../utils/validation';
@@ -102,10 +103,7 @@ const MAINTENANCE_SEEDS = [
 ];
 
 function heartbeatValue(status: ServiceStatus): number {
-  if (status === 'down') return 0;
-  if (status === 'maintenance') return 2;
-  if (status === 'degraded') return 3;
-  return 1;
+  return heartbeatValueForStatus(status);
 }
 
 async function seed(): Promise<void> {

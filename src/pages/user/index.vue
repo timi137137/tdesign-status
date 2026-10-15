@@ -133,8 +133,10 @@ import { useSettingStore, useUserStore } from '@/store';
 import { changeChartsTheme } from '@/utils/color';
 import { LAST_7_DAYS } from '@/utils/date';
 
-import { PRODUCT_LIST, TEAM_MEMBERS, type TeamMember } from './constants';
-import { getFolderLineDataSet, type UserChartSeries } from './index';
+import type { TeamMember } from './constants';
+import { PRODUCT_LIST, TEAM_MEMBERS } from './constants';
+import type { UserChartSeries } from './index';
+import { getFolderLineDataSet } from './index';
 
 echarts.use([GridComponent, TooltipComponent, LineChart, CanvasRenderer, LegendComponent]);
 
@@ -147,10 +149,14 @@ const chartColors = computed(() => store.chartColors);
 const displayName = computed(() => userStore.userInfo.name || userStore.userInfo.username || '未命名');
 const roleLabel = computed(() => ROLE_LABEL[userStore.userInfo.role] || userStore.userInfo.role);
 const avatarLetter = computed(() => displayName.value.slice(0, 1).toUpperCase());
+const greetingForHour = (hour: number) => {
+  if (hour < 12) return '上午好';
+  if (hour < 18) return '下午好';
+  return '晚上好';
+};
 const greeting = computed(() => {
   const hour = new Date().getHours();
-  const hello = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
-  return `${hello}，当前角色是${roleLabel.value}。`;
+  return `${greetingForHour(hour)}，当前角色是${roleLabel.value}。`;
 });
 const USER_INFO_LIST = computed(() => [
   { title: '用户名', content: userStore.userInfo.username || '—' },
@@ -306,7 +312,6 @@ watch(
   },
 );
 </script>
-
 <style lang="less" scoped>
 @import './index.less';
 </style>

@@ -22,8 +22,6 @@
       title="当前处于离线状态"
       message="为避免产生未同步的修改，所有写操作已禁用。"
     />
-    <legacy-status-import />
-
     <t-card :bordered="false">
       <form class="filters" aria-label="服务筛选" @submit.prevent>
         <label class="filter-field">
@@ -287,24 +285,22 @@
     </t-dialog>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusServices',
 };
 </script>
-
 <script setup lang="ts">
-import { MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 
-import { type AdminService, type AdminServiceInput, adminStatusApi } from '@/api/admin-status';
+import type { AdminService, AdminServiceInput } from '@/api/admin-status';
+import { adminStatusApi } from '@/api/admin-status';
 import { ApiError } from '@/api/http';
 import { SERVICE_STATUS_LABEL, SERVICE_STATUS_THEME } from '@/constants/status';
 import { useUserStore } from '@/store/modules/user';
 import type { ServiceStatus } from '@/types/status';
-
-import LegacyStatusImport from '../components/LegacyStatusImport.vue';
 
 const userStore = useUserStore();
 const services = ref<AdminService[]>([]);
@@ -545,7 +541,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', updateOnlineState);
 });
 </script>
-
 <style lang="less" scoped>
 .service-admin {
   display: grid;

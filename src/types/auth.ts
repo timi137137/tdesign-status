@@ -1,4 +1,6 @@
-export type UserRole = 'administrator' | 'publisher' | 'viewer';
+import type { UserRole } from '@shared/public-contract';
+
+export type { UserRole } from '@shared/public-contract';
 
 export type Permission =
   | 'dashboard:read'

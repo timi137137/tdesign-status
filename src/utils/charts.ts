@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
  * @export
  * @param {string[]} dateTime
  * @param {number} divideNum
- * @returns {string[]}
+ * @returns {string[]} 均分后的日期表头
  */
 export function getDateArray(dateTime: string[] = [], divideNum = 10): string[] {
   const timeArray: string[] = [];
@@ -24,8 +24,8 @@ export function getDateArray(dateTime: string[] = [], divideNum = 10): string[] 
 /**
  * 获取随机数
  *
- * @param {number} [num=100]
- * @returns
+ * @param {number} [num]
+ * @returns 0 到 num 之间的随机整数
  *
  * @memberOf DashboardBase
  */

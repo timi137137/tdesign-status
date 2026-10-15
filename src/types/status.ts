@@ -1,14 +1,10 @@
-/** 服务运行状态 */
-export type ServiceStatus = 'up' | 'down' | 'maintenance' | 'degraded';
+import type { IncidentImpact, IncidentStatus, MaintenanceStatus, ServiceStatus } from '@shared/public-contract';
+
+export type { IncidentImpact, IncidentStatus, MaintenanceStatus, ServiceStatus } from '@shared/public-contract';
 
 /** 单次心跳：1 正常 / 0 异常 / 2 维护 / 3 降级 */
 export type HeartbeatValue = 0 | 1 | 2 | 3;
 
-export type IncidentImpact = 'none' | 'minor' | 'major' | 'critical';
-
-export type IncidentStatus = 'investigating' | 'identified' | 'monitoring' | 'resolved';
-
-export type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed';
 export type PublicationStatus = 'draft' | 'published' | 'archived';
 
 export interface StatusUpdate {

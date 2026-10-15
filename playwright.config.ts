@@ -11,9 +11,12 @@ export default defineConfig({
     baseURL: externalBaseUrl || 'http://127.0.0.1:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    ...devices['Desktop Chrome'],
   },
   projects: [
+    {
+      name: 'desktop-chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'mobile-chromium',
       use: { ...devices['Pixel 5'] },

@@ -1,4 +1,5 @@
-import { and, count, desc, eq, gte, isNull, like, lte, type SQL } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, like, lte } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';

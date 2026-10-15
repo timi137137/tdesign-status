@@ -9,8 +9,7 @@ const POLL_INTERVAL = 30_000;
 const SYNC_CHANNEL = 'tdesign-status-public-v1';
 
 type HistoryEntry =
-  | { type: 'incident'; at: number; incident: Incident }
-  | { type: 'maintenance'; at: number; maintenance: Maintenance };
+  { type: 'incident'; at: number; incident: Incident } | { type: 'maintenance'; at: number; maintenance: Maintenance };
 
 const emptyOverall = (): OverallStatusSummary => ({
   status: 'up',

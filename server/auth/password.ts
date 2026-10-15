@@ -1,4 +1,6 @@
-import { randomBytes, scrypt as nodeScrypt, type ScryptOptions, timingSafeEqual } from 'node:crypto';
+import { Buffer } from 'node:buffer';
+import type { ScryptOptions } from 'node:crypto';
+import { randomBytes, scrypt as nodeScrypt, timingSafeEqual } from 'node:crypto';
 
 const ALGORITHM = 'scrypt';
 const COST = 32768;
@@ -31,7 +33,7 @@ export function validatePassword(password: unknown): asserts password is string 
   if (typeof password !== 'string' || password.length < 12 || password.length > 256) {
     throw new Error('密码长度必须为 12 至 256 个字符');
   }
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+  if (!/[A-Z]/i.test(password) || !/\d/.test(password)) {
     throw new Error('密码必须同时包含字母和数字');
   }
 }

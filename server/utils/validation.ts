@@ -33,6 +33,21 @@ export function optionalString(body: Record<string, unknown>, key: string, maxLe
   return normalized;
 }
 
+export function optionalAbsoluteUrl(body: Record<string, unknown>, key: string, maxLength = 2000): string {
+  const value = optionalString(body, key, maxLength) ?? '';
+  if (!value) return '';
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return badRequest(`${key} 必须是绝对 URL`);
+  }
+  if (!/^https?:$/.test(parsed.protocol)) {
+    return badRequest(`${key} 必须是 http 或 https 绝对 URL`);
+  }
+  return value;
+}
+
 export function requiredBoolean(body: Record<string, unknown>, key: string): boolean {
   const value = body[key];
   if (typeof value !== 'boolean') return badRequest(`${key} 必须是布尔值`);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
@@ -8,6 +8,7 @@ import { hashPassword, validatePassword } from '../../auth/password';
 import { revokeAllUserSessions } from '../../auth/session';
 import { users } from '../../db/schema';
 import { USER_ROLES } from '../../domain';
+import { writeAudit } from '../../services/audit';
 import { badRequest, conflict, notFound, ok } from '../../utils/api';
 import {
   enumValue,
@@ -21,7 +22,7 @@ import {
   requiredString,
   versionEtag,
 } from '../../utils/validation';
-import { actorId, auditAndRebuild } from './helpers';
+import { actorId } from './helpers';
 
 function userView(user: typeof users.$inferSelect) {
   return {
@@ -43,11 +44,12 @@ function userView(user: typeof users.$inferSelect) {
 }
 
 function activeAdministratorCount(app: FastifyInstance): number {
-  return app.db
-    .select()
+  const row = app.db
+    .select({ value: count() })
     .from(users)
     .where(and(eq(users.role, 'administrator'), eq(users.isActive, true), isNull(users.deletedAt)))
-    .all().length;
+    .get();
+  return row?.value ?? 0;
 }
 
 function rawPassword(body: Record<string, unknown>, required: boolean): string | undefined {
@@ -63,14 +65,22 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/api/admin/users', { preHandler: administratorOnly }, async (request, reply) => {
     const page = pagination(request.query);
-    const rows = app.db.select().from(users).where(isNull(users.deletedAt)).orderBy(asc(users.username)).all();
+    const total = app.db.select({ value: count() }).from(users).where(isNull(users.deletedAt)).get()?.value ?? 0;
+    const rows = app.db
+      .select()
+      .from(users)
+      .where(isNull(users.deletedAt))
+      .orderBy(asc(users.username))
+      .limit(page.pageSize)
+      .offset(page.offset)
+      .all();
     return ok(reply, {
-      items: rows.slice(page.offset, page.offset + page.pageSize).map(userView),
+      items: rows.map(userView),
       pagination: {
         page: page.page,
         pageSize: page.pageSize,
-        total: rows.length,
-        totalPages: Math.ceil(rows.length / page.pageSize),
+        total,
+        totalPages: Math.ceil(total / page.pageSize),
       },
     });
   });
@@ -114,7 +124,7 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
     }
     app.db.insert(users).values(row).run();
     const created = app.db.select().from(users).where(eq(users.id, row.id)).get();
-    auditAndRebuild(app, request, {
+    writeAudit(app.db, request, {
       action: 'user.created',
       entityType: 'user',
       entityId: row.id,
@@ -185,7 +195,7 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
         revokedSessions = revokeAllUserSessions(app.db, current.id, actor);
       }
       const updated = app.db.select().from(users).where(eq(users.id, current.id)).get();
-      auditAndRebuild(app, request, {
+      writeAudit(app.db, request, {
         action: 'user.updated',
         entityType: 'user',
         entityId: current.id,
@@ -230,7 +240,7 @@ export async function registerUserRoutes(app: FastifyInstance): Promise<void> {
         .run();
       if (result.changes === 0) return conflict();
       const revokedSessions = revokeAllUserSessions(app.db, current.id, actor);
-      auditAndRebuild(app, request, {
+      writeAudit(app.db, request, {
         action: 'user.deleted',
         entityType: 'user',
         entityId: current.id,

@@ -1,16 +1,15 @@
 <template>
   <component :is="resolved" class="t-icon" :size="size" v-bind="$attrs" />
 </template>
-
 <script lang="ts">
 export default {
   name: 'TIcon',
   inheritAttrs: false,
 };
 </script>
-
 <script setup lang="ts">
-import { type Component, computed } from 'vue';
+import type { Component } from 'vue';
+import { computed } from 'vue';
 
 import { LOCAL_ICONS } from './icons';
 

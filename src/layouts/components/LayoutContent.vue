@@ -24,7 +24,8 @@
             :min-column-width="128"
             :popup-props="{
               overlayClassName: 'route-tabs-dropdown',
-              onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) => handleTabMenuClick(visible, ctx, routeItem.path),
+              onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) =>
+                handleTabMenuClick(visible, ctx, routeItem.path),
               visible: activeTabPath === routeItem.path,
             }"
           >
@@ -68,7 +69,6 @@
     </t-footer>
   </t-layout>
 </template>
-
 <script setup lang="ts">
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { computed, nextTick, ref } from 'vue';

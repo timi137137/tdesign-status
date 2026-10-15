@@ -123,13 +123,11 @@
     </template>
   </div>
 </template>
-
 <script lang="ts">
 export default {
   name: 'PublicStatus',
 };
 </script>
-
 <script setup lang="ts">
 import { ViewListIcon } from 'tdesign-icons-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -262,7 +260,6 @@ onBeforeUnmount(() => {
   componentListObserver = null;
 });
 </script>
-
 <style lang="less" scoped>
 .public-status-page {
   display: flex;
@@ -344,7 +341,10 @@ onBeforeUnmount(() => {
       border: 1px solid var(--td-component-border);
       border-radius: var(--td-radius-medium);
       background: var(--td-bg-color-container);
-      transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+      transition:
+        box-shadow 0.2s ease,
+        transform 0.2s ease,
+        border-color 0.2s ease;
 
       @media (hover: hover) and (pointer: fine) {
         &:hover {

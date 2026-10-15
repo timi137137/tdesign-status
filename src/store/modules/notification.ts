@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 
-import { adminApi, type DashboardAuditItem } from '@/api/admin';
+import type { DashboardAuditItem } from '@/api/admin';
+import { adminApi } from '@/api/admin';
 import { store } from '@/store/pinia';
 import type { NotificationItem } from '@/types/interface';
 import { formatStatusTime } from '@/utils/status-date';

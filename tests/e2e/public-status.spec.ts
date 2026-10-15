@@ -10,9 +10,9 @@ for (const route of publicRoutes) {
     await expect(page.locator('h1')).toHaveCount(1);
     await expect
       .poll(async () =>
-        page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--td-bg-color-page').trim()),
+        page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--td-bg-color-page').trim().length),
       )
-      .not.toBe('');
+      .toBeGreaterThan(0);
 
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     expect(results.violations.filter((item) => ['critical', 'serious'].includes(item.impact || ''))).toEqual([]);

@@ -70,17 +70,16 @@
     </t-card>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'SystemAudit',
 };
 </script>
-
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 
-import { adminApi, type AdminAuditLog } from '@/api/admin';
+import type { AdminAuditLog } from '@/api/admin';
+import { adminApi } from '@/api/admin';
 import { formatStatusTime } from '@/utils/status-date';
 
 const emptyFilters = () => ({
@@ -173,7 +172,6 @@ onMounted(() => {
   loadAudit();
 });
 </script>
-
 <style lang="less" scoped>
 .audit-admin {
   display: grid;

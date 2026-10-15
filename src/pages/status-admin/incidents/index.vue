@@ -300,20 +300,20 @@
     </t-dialog>
   </main>
 </template>
-
 <script lang="ts">
 export default {
   name: 'StatusIncidents',
 };
 </script>
-
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { MessagePlugin, type SubmitContext } from 'tdesign-vue-next';
+import type { SubmitContext } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { type AdminIncident, type AdminListQuery, type AdminService, adminStatusApi } from '@/api/admin-status';
+import type { AdminIncident, AdminListQuery, AdminService } from '@/api/admin-status';
+import { adminStatusApi } from '@/api/admin-status';
 import { ApiError } from '@/api/http';
 import { INCIDENT_IMPACT_LABEL, INCIDENT_IMPACT_THEME, INCIDENT_STATUS_LABEL } from '@/constants/status';
 import { useUserStore } from '@/store/modules/user';
@@ -573,7 +573,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', updateOnlineState);
 });
 </script>
-
 <style lang="less" scoped>
 .incident-admin {
   display: grid;

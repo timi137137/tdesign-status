@@ -1,27 +1,30 @@
-import { desc, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
 import { auditLogs, incidents, maintenances, publicSnapshots, services, siteConfigs, users } from '../../db/schema';
 import { ok } from '../../utils/api';
-import { ADMIN_READ_ROLES, incidentView, maintenanceView } from './helpers';
+import { ADMIN_READ_ROLES, countRows, incidentView, maintenanceView } from './helpers';
+
+const ACTIVE_PREVIEW_LIMIT = 10;
 
 export async function registerDashboardRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/admin/dashboard', { preHandler: requireRoles(...ADMIN_READ_ROLES) }, async (request, reply) => {
     const serviceRows = app.db.select().from(services).where(isNull(services.deletedAt)).all();
-    const incidentRows = app.db
+    const activeIncidentRows = app.db
       .select()
       .from(incidents)
-      .where(isNull(incidents.deletedAt))
+      .where(and(isNull(incidents.deletedAt), ne(incidents.status, 'resolved')))
       .orderBy(desc(incidents.startedAt))
+      .limit(ACTIVE_PREVIEW_LIMIT)
       .all();
-    const maintenanceRows = app.db
+    const activeMaintenanceRows = app.db
       .select()
       .from(maintenances)
-      .where(isNull(maintenances.deletedAt))
+      .where(and(isNull(maintenances.deletedAt), ne(maintenances.status, 'completed')))
       .orderBy(desc(maintenances.scheduledStart))
+      .limit(ACTIVE_PREVIEW_LIMIT)
       .all();
-    const userRows = app.db.select().from(users).where(isNull(users.deletedAt)).all();
     const recentAudit = app.db
       .select()
       .from(auditLogs)
@@ -42,22 +45,20 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
 
     return ok(reply, {
       counts: {
-        services: serviceRows.length,
-        enabledServices: serviceRows.filter((item) => item.enabled).length,
-        activeIncidents: incidentRows.filter((item) => item.status !== 'resolved').length,
-        scheduledMaintenances: maintenanceRows.filter((item) => item.status !== 'completed').length,
-        users: userRows.length,
-        activeUsers: userRows.filter((item) => item.isActive).length,
+        services: countRows(app, services, isNull(services.deletedAt)),
+        enabledServices: countRows(app, services, and(isNull(services.deletedAt), eq(services.enabled, true))),
+        activeIncidents: countRows(app, incidents, and(isNull(incidents.deletedAt), ne(incidents.status, 'resolved'))),
+        scheduledMaintenances: countRows(
+          app,
+          maintenances,
+          and(isNull(maintenances.deletedAt), ne(maintenances.status, 'completed')),
+        ),
+        users: countRows(app, users, isNull(users.deletedAt)),
+        activeUsers: countRows(app, users, and(isNull(users.deletedAt), eq(users.isActive, true))),
       },
-      services: serviceRows.sort((left, right) => left.position - right.position),
-      activeIncidents: incidentRows
-        .filter((item) => item.status !== 'resolved')
-        .slice(0, 10)
-        .map((item) => incidentView(app, item)),
-      activeMaintenances: maintenanceRows
-        .filter((item) => item.status !== 'completed')
-        .slice(0, 10)
-        .map((item) => maintenanceView(app, item)),
+      services: [...serviceRows].sort((left, right) => left.position - right.position),
+      activeIncidents: activeIncidentRows.map((item) => incidentView(app, item)),
+      activeMaintenances: activeMaintenanceRows.map((item) => maintenanceView(app, item)),
       siteConfig: config,
       snapshot,
       recentAudit: request.principal?.role === 'administrator' ? recentAudit : [],
