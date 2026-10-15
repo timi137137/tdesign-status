@@ -2,7 +2,8 @@
 nixPkgs = ["nodejs_24", "python3", "gcc"]
 
 [phases.install]
-cmds = ["yarn install --frozen-lockfile"]
+# 平台在构建阶段也会设 NODE_ENV=production，而构建要用 devDependencies（vue-tsc / vite）。
+cmds = ["yarn install --frozen-lockfile --production=false"]
 
 [phases.build]
 cmds = ["yarn build"]

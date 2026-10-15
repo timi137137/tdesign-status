@@ -48,7 +48,7 @@ npm run db:seed
 npm run dev
 ```
 
-`yarn install --frozen-lockfile` 等价可用；仓库同时提交 `package-lock.json` 与 `yarn.lock`（Render 走 yarn）。
+`yarn install --frozen-lockfile` 等价可用；仓库同时提交 `package-lock.json` 与 `yarn.lock`（Render 走 yarn）。若环境设了 `NODE_ENV=production`，要加上 `--production=false`：构建需要 devDependencies（`vue-tsc`、`vite`），而 yarn 在 production 下不装它们。
 
 - 应用 / API（开发）：`http://127.0.0.1:3000`（以 `.env` 为准）
 - Vite 前端（开发）：通常 `http://127.0.0.1:3002`

@@ -21,7 +21,9 @@
 3. 填写 `STATUS_ADMIN_USERNAME` / `STATUS_ADMIN_PASSWORD`。
 4. 打开 `https://<service>.onrender.com`；健康检查 `GET /api/health/live`。
 
-构建命令为 `yarn install --frozen-lockfile && yarn build`（用仓库内的 `yarn.lock`），Node 版本按 `package.json` 的 `engines`（`>=24`）。
+构建命令为 `yarn install --frozen-lockfile --production=false && yarn build`（用仓库内的 `yarn.lock`），Node 版本按 `package.json` 的 `engines`（`>=24`）。
+
+`--production=false` 不能省：托管平台在**构建阶段**也会注入 `NODE_ENV=production`，而 yarn 在 production 下不装 devDependencies，`vue-tsc` / `vite` 都在里面，构建会以 `vue-tsc: not found` 失败。运行期仍按上表用 `NODE_ENV=production`。
 
 Free 无持久盘；`STATUS_AUTO_SEED=true` 时空库会自动 seed。空闲约 15 分钟休眠。
 

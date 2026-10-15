@@ -3,7 +3,7 @@ services:
     name: tdesign-status
     runtime: node
     plan: free
-    buildCommand: yarn install --frozen-lockfile && yarn build
+    buildCommand: yarn install --frozen-lockfile --production=false && yarn build
     startCommand: yarn start
     healthCheckPath: /api/health/live
     envVars:

@@ -49,6 +49,8 @@ npm run dev
 ```
 
 `yarn install --frozen-lockfile` works the same way; `yarn.lock` is committed for Render.
+Add `--production=false` to it whenever `NODE_ENV=production` is set: the build needs devDependencies
+(`vue-tsc`, `vite`), and yarn skips them in production mode.
 
 - App / API (dev): `http://127.0.0.1:3000` (see `.env`)
 - Vite client (dev): usually `http://127.0.0.1:3002`
