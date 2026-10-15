@@ -219,9 +219,6 @@ function seedDemoData(context: ReturnType<typeof openDatabase>, adminId: string,
       if (down) sampleStatus = 'down';
       else if (degraded) sampleStatus = 'degraded';
       const latency = sampleStatus === 'down' ? 0 : service.baseLatency + ((day * 7 + position) % 35);
-      let sampleUptime = 100;
-      if (down) sampleUptime = 98.33;
-      else if (degraded) sampleUptime = 99.5;
       context.db
         .insert(serviceSamples)
         .values({
@@ -231,7 +228,6 @@ function seedDemoData(context: ReturnType<typeof openDatabase>, adminId: string,
           status: sampleStatus,
           heartbeatValue: heartbeatValue(sampleStatus),
           latencyMs: latency,
-          uptime: sampleUptime,
           createdAt: now,
           updatedAt: now,
           createdBy: adminId,

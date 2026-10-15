@@ -144,7 +144,6 @@ export const serviceSamples = sqliteTable(
     status: text('status', { enum: SERVICE_STATUSES }).notNull(),
     heartbeatValue: integer('heartbeat_value').notNull(),
     latencyMs: integer('latency_ms').notNull(),
-    uptime: real('uptime').notNull(),
     ...lifecycleColumns(),
   },
   (table) => [
