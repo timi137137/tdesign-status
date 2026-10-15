@@ -25,6 +25,8 @@
 
 `--production=false` 不能省：托管平台在**构建阶段**也会注入 `NODE_ENV=production`，而 yarn 在 production 下不装 devDependencies，`vue-tsc` / `vite` 都在里面，构建会以 `vue-tsc: not found` 失败。运行期仍按上表用 `NODE_ENV=production`。
 
+构建产出的 bundle 由 Vite 的构建默认值决定（`vite build` 默认 production），所以**不要**把 `NODE_ENV` 写进 `.env`：那个文件同时被 Vite 构建读取，写 `development` 会把 Vue 的开发构建打进 bundle（实测 4.4 MB → 4.6 MB 并带开发告警）。`NODE_ENV=production` 只应由平台或运行环境提供。
+
 Free 无持久盘；`STATUS_AUTO_SEED=true` 时空库会自动 seed。空闲约 15 分钟休眠。
 
 ## Koyeb / Railway（Dockerfile）
