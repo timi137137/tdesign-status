@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { AppDatabase } from '../../server/db/client';
+import { createBuiltinProbeRegistry } from '../../server/services/probe';
 import { createProbeScheduler } from '../../server/services/probe/scheduler';
 import {
   closeFixtures,
@@ -30,6 +31,7 @@ function schedulerFor(db: AppDatabase, tickMs: number) {
     concurrency: 2,
     timeoutMs: 2000,
     tickMs,
+    registry: createBuiltinProbeRegistry(),
   });
   return { scheduler, resultCount: () => results };
 }

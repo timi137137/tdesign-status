@@ -95,6 +95,7 @@ export interface ServerConfig {
   readonly bodyLimit: number;
   readonly autoSeed: boolean;
   readonly probesEnabled: boolean;
+  readonly probeIntervalSeconds: number;
   readonly probeTimeoutMs: number;
   readonly probeConcurrency: number;
 }
@@ -167,6 +168,7 @@ export function loadConfig(): ServerConfig {
     bodyLimit: positiveInteger(process.env.STATUS_BODY_LIMIT, 1024 * 1024),
     autoSeed: booleanValue(process.env.STATUS_AUTO_SEED, onManagedPlatform),
     probesEnabled: booleanValue(process.env.STATUS_PROBES_ENABLED, false),
+    probeIntervalSeconds: boundedInteger(process.env.STATUS_PROBE_INTERVAL_SECONDS, 60, 10, 86_400),
     probeTimeoutMs: boundedInteger(process.env.STATUS_PROBE_TIMEOUT_MS, 5000, 100, 60_000),
     probeConcurrency: boundedInteger(process.env.STATUS_PROBE_CONCURRENCY, 4, 1, 64),
   };

@@ -3,7 +3,6 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { AppDatabase } from '../../db/client';
 import type { ServiceProbeRow } from '../../db/schema';
 import { serviceProbes } from '../../db/schema';
-import { createBuiltinProbeRegistry } from './index';
 import type { ProbeRegistry } from './registry';
 import { executeProbe, persistProbeResult } from './runner';
 
@@ -23,7 +22,7 @@ export interface ProbeSchedulerOptions {
   timeoutMs: number;
   /** 到期检查的轮询间隔。 */
   tickMs?: number;
-  registry?: ProbeRegistry;
+  registry: ProbeRegistry;
 }
 
 export interface ProbeScheduler {
@@ -39,7 +38,7 @@ export interface ProbeScheduler {
  * 都不需要维护定时器集合，一轮内也不会重复执行同一个点位。
  */
 export function createProbeScheduler(options: ProbeSchedulerOptions): ProbeScheduler {
-  const registry = options.registry ?? createBuiltinProbeRegistry();
+  const registry = options.registry;
   const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
   const controller = new AbortController();
   const inFlight = new Set<string>();

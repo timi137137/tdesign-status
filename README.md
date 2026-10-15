@@ -92,6 +92,7 @@ docker run --rm -p 3000:3000 \
 | `STATUS_AUTO_SEED` | Auto-fill demo data on an empty database |
 | `STATUS_TRUST_PROXY` | `false` (default) ignores `X-Forwarded-For`; `true` trusts exactly one hop; also accepts a hop count or a comma-separated proxy IP/CIDR list |
 | `STATUS_PROBES_ENABLED` | `false` by default. When enabled, probes defined in `service_probes` run on their interval and their results feed samples and the service status |
+| `STATUS_PROBE_INTERVAL_SECONDS` | Default interval for new probes, default `60` |
 | `STATUS_PROBE_TIMEOUT_MS` | Per-check timeout in milliseconds, default `5000` |
 | `STATUS_PROBE_CONCURRENCY` | Maximum number of checks running at the same time, default `4` |
 
