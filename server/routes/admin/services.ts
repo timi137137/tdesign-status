@@ -4,8 +4,9 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { requireRoles } from '../../auth/guards';
-import { services, serviceSamples } from '../../db/schema';
+import { services, serviceSamples, serviceStateEvents } from '../../db/schema';
 import { heartbeatValueForStatus, SERVICE_STATUSES } from '../../domain';
+import { STATE_EVENT_REASON } from '../../services/state-events';
 import { badRequest, conflict, notFound, ok } from '../../utils/api';
 import {
   enumValue,
@@ -102,6 +103,22 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
         updatedBy: actor,
       })
       .run();
+    app.db
+      .insert(serviceStateEvents)
+      .values({
+        id: randomUUID(),
+        serviceId: row.id,
+        probeId: null,
+        at: now,
+        fromStatus: row.status,
+        toStatus: row.status,
+        reason: STATE_EVENT_REASON.observationStarted,
+        createdAt: now,
+        updatedAt: now,
+        createdBy: actor,
+        updatedBy: actor,
+      })
+      .run();
     auditAndRebuild(app, request, {
       action: 'service.created',
       entityType: 'service',
@@ -149,6 +166,24 @@ export async function registerServiceRoutes(app: FastifyInstance): Promise<void>
         .where(and(eq(services.id, current.id), eq(services.version, version), isNull(services.deletedAt)))
         .run();
       if (result.changes === 0) return conflict();
+      if (next.status !== current.status) {
+        app.db
+          .insert(serviceStateEvents)
+          .values({
+            id: randomUUID(),
+            serviceId: current.id,
+            probeId: null,
+            at: now,
+            fromStatus: current.status,
+            toStatus: next.status,
+            reason: STATE_EVENT_REASON.manual,
+            createdAt: now,
+            updatedAt: now,
+            createdBy: actorId(request),
+            updatedBy: actorId(request),
+          })
+          .run();
+      }
       if (next.status !== current.status || next.latencyMs !== current.latencyMs || next.uptime !== current.uptime) {
         app.db
           .insert(serviceSamples)

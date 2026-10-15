@@ -91,6 +91,9 @@ docker run --rm -p 3000:3000 \
 | `STATUS_HOST` | 监听地址 |
 | `STATUS_AUTO_SEED` | 自动填充模拟数据 |
 | `STATUS_TRUST_PROXY` | 默认 `false` 不信任 `X-Forwarded-For`；`true` 只信任 1 跳；也可填跳数或可信代理 IP/CIDR 列表 |
+| `STATUS_PROBES_ENABLED` | 默认 `false`。开启后按 `service_probes` 里的点位定义周期探测，结果写入样本并聚合到服务状态 |
+| `STATUS_PROBE_TIMEOUT_MS` | 单次探测超时，默认 `5000` |
+| `STATUS_PROBE_CONCURRENCY` | 同时进行的探测数上限，默认 `4` |
 
 ### 浏览器兼容
 

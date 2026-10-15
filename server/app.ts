@@ -16,6 +16,7 @@ import { registerSecurity } from './plugins/security';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerPublicRoutes } from './routes/public';
+import { createProbeScheduler } from './services/probe/scheduler';
 import { runRetentionSweep } from './services/retention';
 import { createSnapshotScheduler } from './services/snapshot-scheduler';
 import { ApiError, ok } from './utils/api';
@@ -81,6 +82,15 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
   const snapshotScheduler = createSnapshotScheduler(app);
   app.decorate('snapshotScheduler', snapshotScheduler);
 
+  const probeScheduler = createProbeScheduler({
+    db: database.db,
+    log: app.log,
+    onResults: () => snapshotScheduler.schedule(),
+    concurrency: config.probeConcurrency,
+    timeoutMs: config.probeTimeoutMs,
+  });
+  if (config.probesEnabled) probeScheduler.start();
+
   try {
     runRetentionSweep(database.db);
   } catch (error) {
@@ -97,6 +107,7 @@ export async function buildApp(config: ServerConfig = loadConfig()): Promise<Fas
 
   app.addHook('onClose', async () => {
     clearInterval(retentionTimer);
+    await probeScheduler.stop();
     snapshotScheduler.flush();
     database.close();
   });

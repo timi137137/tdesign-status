@@ -1,8 +1,3 @@
-import type { RequestListener } from 'node:http';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import { createServer as createTcpServer } from 'node:net';
-
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createBuiltinProbeRegistry } from '../../server/services/probe';
@@ -10,48 +5,11 @@ import { parseProbeConfig } from '../../server/services/probe/config';
 import { createProbeRegistry, ProbeConfigError } from '../../server/services/probe/registry';
 import { httpProbe } from '../../server/services/probe/types/http';
 import { tcpProbe } from '../../server/services/probe/types/tcp';
-
-const cleanups: Array<() => Promise<void>> = [];
-
-async function closeAll(): Promise<void> {
-  await Promise.all(cleanups.splice(0).map((cleanup) => cleanup()));
-}
+import { closeFixtures, idleSignal, startHttpServer, startTcpServer } from './probe-fixtures';
 
 afterEach(async () => {
-  await closeAll();
+  await closeFixtures();
 });
-
-function startHttpServer(handler: RequestListener): Promise<string> {
-  const server = createServer(handler);
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo;
-      cleanups.push(
-        () =>
-          new Promise<void>((closed) => {
-            server.closeAllConnections();
-            server.close(() => closed());
-          }),
-      );
-      resolve(`http://127.0.0.1:${port}`);
-    });
-  });
-}
-
-function startTcpServer(): Promise<string> {
-  const server = createTcpServer((socket) => socket.end());
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo;
-      cleanups.push(() => new Promise<void>((closed) => server.close(() => closed())));
-      resolve(`127.0.0.1:${port}`);
-    });
-  });
-}
-
-function idleSignal(): AbortSignal {
-  return new AbortController().signal;
-}
 
 describe('探针注册表', () => {
   it('预装 http 与 tcp 两个类型', () => {
@@ -194,7 +152,7 @@ describe('tCP 探针', () => {
 
   it('端口未监听为异常', async () => {
     const target = await startTcpServer();
-    await closeAll();
+    await closeFixtures();
     const result = await tcpProbe.run({ target, config: {}, signal: idleSignal() });
     expect(result.status).toBe('down');
     expect(result.detail).toBeTruthy();

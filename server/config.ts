@@ -28,6 +28,14 @@ function positiveInteger(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
+function boundedInteger(value: string | undefined, fallback: number, minimum: number, maximum: number): number {
+  const parsed = positiveInteger(value, fallback);
+  if (parsed < minimum || parsed > maximum) {
+    throw new Error(`环境变量必须是 ${minimum} 至 ${maximum} 之间的整数，收到：${value}`);
+  }
+  return parsed;
+}
+
 function booleanValue(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value === '') return fallback;
   return value === '1' || value.toLowerCase() === 'true';
@@ -86,6 +94,9 @@ export interface ServerConfig {
   readonly trustProxy: boolean | number | string[];
   readonly bodyLimit: number;
   readonly autoSeed: boolean;
+  readonly probesEnabled: boolean;
+  readonly probeTimeoutMs: number;
+  readonly probeConcurrency: number;
 }
 
 function detectsManagedPlatform(): boolean {
@@ -155,5 +166,8 @@ export function loadConfig(): ServerConfig {
     trustProxy: resolveTrustProxy(onManagedPlatform),
     bodyLimit: positiveInteger(process.env.STATUS_BODY_LIMIT, 1024 * 1024),
     autoSeed: booleanValue(process.env.STATUS_AUTO_SEED, onManagedPlatform),
+    probesEnabled: booleanValue(process.env.STATUS_PROBES_ENABLED, false),
+    probeTimeoutMs: boundedInteger(process.env.STATUS_PROBE_TIMEOUT_MS, 5000, 100, 60_000),
+    probeConcurrency: boundedInteger(process.env.STATUS_PROBE_CONCURRENCY, 4, 1, 64),
   };
 }
