@@ -70,6 +70,57 @@ export interface AdminServiceInput {
   latencyMs?: number;
 }
 
+export type ProbeFieldKind = 'string' | 'integer' | 'boolean' | 'string-list';
+
+/** 探针类型声明的参数描述，后台表单由它生成。 */
+export interface AdminProbeField {
+  key: string;
+  label: string;
+  kind: ProbeFieldKind;
+  default?: string | number | boolean | string[] | null;
+  required?: boolean;
+  minimum?: number;
+  maximum?: number;
+  options?: string[];
+  maximumItems?: number;
+  description?: string;
+}
+
+export interface AdminProbeType {
+  name: string;
+  label: string;
+  fields: AdminProbeField[];
+}
+
+export interface AdminProbe {
+  id: string;
+  serviceId: string;
+  name: string;
+  type: string;
+  target: string;
+  configJson: Record<string, unknown>;
+  intervalSeconds: number;
+  region?: string | null;
+  position: number;
+  enabled: boolean;
+  lastCheckedAt?: number | null;
+  lastStatus?: ServiceStatus | null;
+  lastLatencyMs?: number | null;
+  consecutiveFailures: number;
+  version: number;
+}
+
+export interface AdminProbeInput {
+  serviceId: string;
+  name: string;
+  type: string;
+  target: string;
+  config: Record<string, unknown>;
+  intervalSeconds: number;
+  region?: string;
+  enabled: boolean;
+}
+
 export interface AdminIncident extends Incident {
   publishState: PublishState;
   publishedAt?: number | null;
@@ -211,6 +262,19 @@ export const adminStatusApi = {
         ...jsonBody({ items }),
       }),
     references: serviceReferences,
+  },
+  probes: {
+    types: () => apiFetch<{ items: AdminProbeType[] }>('/api/admin/probe-types'),
+    list: (query?: AdminListQuery) => apiFetch<{ items: AdminProbe[] }>(`/api/admin/probes${queryString(query)}`),
+    create: (payload: AdminProbeInput) =>
+      apiFetch<AdminProbe>('/api/admin/probes', {
+        method: 'POST',
+        ...jsonBody(payload),
+      }),
+    update: (id: string, version: number, payload: Partial<AdminProbeInput>) =>
+      apiFetch<AdminProbe>(entityPath('/api/admin/probes', id), versionedJson('PUT', version, payload)),
+    remove: (id: string, version: number) =>
+      apiFetch<{ id: string; version: number }>(entityPath('/api/admin/probes', id), versionedJson('DELETE', version)),
   },
   incidents: {
     list: listIncidents,

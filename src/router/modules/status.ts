@@ -34,6 +34,16 @@ export default [
         },
       },
       {
+        path: 'probes',
+        name: 'StatusProbes',
+        component: retryImport(() => import('@/pages/status-admin/probes/index.vue')),
+        meta: {
+          title: '监控点位',
+          keepAlive: false,
+          permissions: ['service:read'],
+        },
+      },
+      {
         path: 'incidents',
         name: 'StatusIncidents',
         component: retryImport(() => import('@/pages/status-admin/incidents/index.vue')),
