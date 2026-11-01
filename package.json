@@ -67,7 +67,7 @@
     "@types/better-sqlite3": "^9.6.0",
     "@types/echarts": "^4.9.18",
     "@types/lodash": "^4.14.195",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "@types/nprogress": "^0.2.0",
     "@types/qs": "^6.9.7",
     "@vitejs/plugin-vue": "^6.0.8",
